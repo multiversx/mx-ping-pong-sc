@@ -193,6 +193,11 @@ pub trait PingPong {
         }
     }
 
+    #[view(didUserPing)]
+    fn did_user_ping(&self, address: Address) -> bool {
+        self.user_mapper().get_user_id(&address) != 0
+    }
+
     /// Lists the addresses of all users that have `ping`-ed,
     /// in the order they have `ping`-ed
     #[view(getUserAddresses)]
