@@ -1,0 +1,15 @@
+[package]
+name = "ping-pong-abi"
+version = "0.0.0"
+authors = [ "Bruda Claudiu-Marcel <claudiu725@yahoo.com>",]
+edition = "2018"
+publish = false
+
+[dependencies.ping-pong]
+path = ".."
+
+[dependencies.elrond-wasm]
+version = "0.18.2"
+
+[dependencies.elrond-wasm-debug]
+version = "0.18.2"

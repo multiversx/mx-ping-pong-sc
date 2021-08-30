@@ -1,0 +1,23 @@
+[package]
+name = "ping-pong"
+version = "0.0.2"
+authors = [ "Bruda Claudiu-Marcel <claudiu725@yahoo.com>",]
+edition = "2018"
+publish = false
+
+[lib]
+path = "src/ping_pong.rs"
+
+[features]
+wasm-output-mode = ["elrond-wasm-node"]
+
+[dependencies.elrond-wasm]
+version = "0.18.2"
+features = ["derive"]
+
+[dependencies.elrond-wasm-node]
+version = "0.18.2"
+optional = true
+
+[dev-dependencies.elrond-wasm-debug]
+version = "0.18.2"
