@@ -46,9 +46,15 @@ pub trait PingPong {
 
         self.ping_amount().set(&ping_amount);
 
+        let current_timestamp = self.blockchain().get_block_timestamp();
         let activation_timestamp = opt_activation_timestamp
             .into_option()
-            .unwrap_or_else(|| self.blockchain().get_block_timestamp());
+            .unwrap_or_else(|| current_timestamp);
+        require!(
+            activation_timestamp >= current_timestamp,
+            "activation timestamp cannot be in the past"
+        );
+
         let deadline = activation_timestamp + duration_in_seconds;
 
         self.activation_timestamp().set(&activation_timestamp);
@@ -129,7 +135,7 @@ pub trait PingPong {
 
                     self.send()
                         .direct(&user_address, &token_id, 0, &amount, b"pong");
-                        
+
                     Ok(())
                 } else {
                     sc_error!("unknown user")
