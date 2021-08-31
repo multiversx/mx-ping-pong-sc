@@ -2,64 +2,42 @@
 
 elrond_wasm::imports!();
 
-mod user_status;
-
-use user_status::UserStatus;
-
-/// Derived empirically.
-const PONG_ALL_LOW_GAS_LIMIT: u64 = 3_000_000;
-
 /// A contract that allows anyone to send a fixed sum, locks it for a while and then allows users to take it back.
 /// Sending funds to the contract is called "ping".
 /// Taking the same funds back is called "pong".
 ///
 /// Restrictions:
-/// - `ping` can be called only after the contract is activated. By default the contract is activated on deploy.
-/// - Users can only `ping` once, ever.
 /// - Only the set amount can be `ping`-ed, no more, no less.
-/// - The contract can optionally have a maximum cap. No more users can `ping` after the cap has been reached.
-/// - The `ping` endpoint optionally accepts
-/// - `pong` can only be called after the contract expired (a certain duration has passed since activation).
-/// - `pongAll` can be used to send to all users to `ping`-ed. If it runs low on gas, it will interrupt itself.
-/// It can be continued anytime.
+/// - `pong` can only be called after a certain period after `ping`.
 #[elrond_wasm::contract]
 pub trait PingPong {
     /// Necessary configuration when deploying:
-    /// `token_id` - the Token Identifier of the token that is going to be used. Pass "EGLD" if you want to use EGLD instead of an ESDT.
-    /// `ping_amount` - the exact amount that needs to be sent when `ping`-ing.
-    /// `duration_in_seconds` - how much time (in seconds) until contract expires.
-    /// `opt_activation_timestamp` - optionally specify the contract to only actvivate at a later date.
-    /// `max_funds` - optional funding cap, no more funds than this can be added to the contract.
+    /// `ping_amount` - the exact amount that needs to be sent when `ping`-ing.  
+    /// `duration_in_seconds` - how much time (in seconds) until `pong` can be called after the initial `ping` call  
+    /// `token_id` - Optional. The Token Identifier of the token that is going to be used. Default is "EGLD".
     #[init]
     fn init(
         &self,
-        token_id: TokenIdentifier,
         ping_amount: Self::BigUint,
         duration_in_seconds: u64,
-        #[var_args] opt_activation_timestamp: OptionalArg<u64>,
-        #[var_args] max_funds: OptionalArg<Self::BigUint>,
+        #[var_args] opt_token_id: OptionalArg<TokenIdentifier>,
     ) -> SCResult<()> {
+        require!(ping_amount > 0, "Ping amount cannot be set to zero");
+        self.ping_amount().set(&ping_amount);
+
+        require!(
+            duration_in_seconds > 0,
+            "Duration in seconds cannot be set to zero"
+        );
+        self.duration_in_seconds().set(&duration_in_seconds);
+
+        let token_id = opt_token_id
+            .into_option()
+            .unwrap_or_else(TokenIdentifier::egld);
         require!(
             token_id.is_egld() || token_id.is_valid_esdt_identifier(),
             "Invalid token provided"
         );
-
-        self.ping_amount().set(&ping_amount);
-
-        let current_timestamp = self.blockchain().get_block_timestamp();
-        let activation_timestamp = opt_activation_timestamp
-            .into_option()
-            .unwrap_or_else(|| current_timestamp);
-        require!(
-            activation_timestamp >= current_timestamp,
-            "activation timestamp cannot be in the past"
-        );
-
-        let deadline = activation_timestamp + duration_in_seconds;
-
-        self.activation_timestamp().set(&activation_timestamp);
-        self.deadline().set(&deadline);
-        self.max_funds().set(&max_funds.into_option());
 
         Ok(())
     }
@@ -75,175 +53,71 @@ pub trait PingPong {
     ) -> SCResult<()> {
         require!(
             payment_token == self.accepted_payment_token_id().get(),
-            "invalid payment token"
+            "Invalid payment token"
         );
         require!(
             payment_amount == self.ping_amount().get(),
-            "the payment must match the fixed sum"
+            "The payment must match the fixed ping amount"
         );
-
-        let activation_timestamp = self.activation_timestamp().get();
-        let current_block_timestamp = self.blockchain().get_block_timestamp();
-        require!(
-            activation_timestamp <= current_block_timestamp,
-            "smart contract not active yet"
-        );
-
-        require!(
-            current_block_timestamp < self.deadline().get(),
-            "deadline has passed"
-        );
-
-        if let Some(max_funds) = self.max_funds().get() {
-            let sc_balance_after_transfer = self.blockchain().get_sc_balance(&payment_token, 0);
-            require!(
-                sc_balance_after_transfer <= max_funds,
-                "smart contract full"
-            );
-        }
 
         let caller = self.blockchain().get_caller();
-        let user_id = self.user_mapper().get_or_create_user(&caller);
-        let user_status = self.user_status(user_id).get();
+        require!(!self.did_user_ping(&caller), "Already pinged");
 
-        match user_status {
-            UserStatus::New => {
-                self.user_status(user_id).set(&UserStatus::Registered);
-                Ok(())
-            }
-            UserStatus::Registered => {
-                sc_error!("can only ping once")
-            }
-            UserStatus::Withdrawn => {
-                sc_error!("already withdrawn")
-            }
-        }
-    }
+        let current_block_timestamp = self.blockchain().get_block_timestamp();
+        self.user_ping_timestamp(&caller)
+            .set(&current_block_timestamp);
 
-    fn pong_by_user_id(&self, user_id: usize) -> SCResult<()> {
-        let user_status = self.user_status(user_id).get();
-        match user_status {
-            UserStatus::New => {
-                sc_error!("can't pong, never pinged")
-            }
-            UserStatus::Registered => {
-                self.user_status(user_id).set(&UserStatus::Withdrawn);
-
-                if let Some(user_address) = self.user_mapper().get_user_address(user_id) {
-                    let token_id = self.accepted_payment_token_id().get();
-                    let amount = self.ping_amount().get();
-
-                    self.send()
-                        .direct(&user_address, &token_id, 0, &amount, b"pong");
-
-                    Ok(())
-                } else {
-                    sc_error!("unknown user")
-                }
-            }
-            UserStatus::Withdrawn => {
-                sc_error!("already withdrawn")
-            }
-        }
+        Ok(())
     }
 
     /// User can take back funds from the contract.
     /// Can only be called after expiration.
     #[endpoint]
     fn pong(&self) -> SCResult<()> {
-        require!(
-            self.blockchain().get_block_timestamp() >= self.deadline().get(),
-            "can't withdraw before deadline"
-        );
-
         let caller = self.blockchain().get_caller();
-        let user_id = self.user_mapper().get_user_id(&caller);
-        self.pong_by_user_id(user_id)
-    }
+        require!(self.did_user_ping(&caller), "Must ping first");
 
-    /// Send back funds to all users who pinged.
-    /// Returns
-    /// - `completed` if everything finished
-    /// - `interrupted` if run out of gas midway.
-    /// Can only be called after expiration.
-    #[endpoint(pongAll)]
-    fn pong_all(&self) -> SCResult<OperationCompletionStatus> {
+        let user_ping_timestamp = self.user_ping_timestamp(&caller).get();
+        let duration_in_seconds = self.duration_in_seconds().get();
+        let pong_enable_timestamp = user_ping_timestamp + duration_in_seconds;
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
         require!(
-            self.blockchain().get_block_timestamp() >= self.deadline().get(),
-            "can't withdraw before deadline"
+            current_timestamp >= pong_enable_timestamp,
+            "Cannot pong before deadline"
         );
 
-        let num_users = self.user_mapper().get_user_count();
-        let mut pong_all_last_user = self.pong_all_last_user().get();
-        loop {
-            if pong_all_last_user >= num_users {
-                // clear field and reset to 0
-                pong_all_last_user = 0;
-                self.pong_all_last_user().set(&pong_all_last_user);
-                return Ok(OperationCompletionStatus::Completed);
-            }
+        self.user_ping_timestamp(&caller).clear();
 
-            if self.blockchain().get_gas_left() < PONG_ALL_LOW_GAS_LIMIT {
-                self.pong_all_last_user().set(&pong_all_last_user);
-                return Ok(OperationCompletionStatus::InterruptedBeforeOutOfGas);
-            }
+        let token_id = self.accepted_payment_token_id().get();
+        let amount = self.ping_amount().get();
 
-            pong_all_last_user += 1;
-            let _ = self.pong_by_user_id(pong_all_last_user);
-        }
+        self.send()
+            .direct(&caller, &token_id, 0, &amount, b"pong successful");
+
+        Ok(())
     }
 
     #[view(didUserPing)]
-    fn did_user_ping(&self, address: Address) -> bool {
-        self.user_mapper().get_user_id(&address) != 0
-    }
-
-    /// Lists the addresses of all users that have `ping`-ed,
-    /// in the order they have `ping`-ed
-    #[view(getUserAddresses)]
-    fn get_user_addresses(&self) -> MultiResultVec<Address> {
-        self.user_mapper().get_all_addresses().into()
+    fn did_user_ping(&self, address: &Address) -> bool {
+        !self.user_ping_timestamp(address).is_empty()
     }
 
     // storage
 
     #[view(getAcceptedPaymentToken)]
-    #[storage_mapper("accepted_payment_token_id")]
+    #[storage_mapper("acceptedPaymentTokenId")]
     fn accepted_payment_token_id(&self) -> SingleValueMapper<Self::Storage, TokenIdentifier>;
 
     #[view(getPingAmount)]
-    #[storage_mapper("ping_amount")]
+    #[storage_mapper("pingAmount")]
     fn ping_amount(&self) -> SingleValueMapper<Self::Storage, Self::BigUint>;
 
-    #[view(getDeadline)]
-    #[storage_mapper("deadline")]
-    fn deadline(&self) -> SingleValueMapper<Self::Storage, u64>;
+    #[view(getDurationTimestamp)]
+    #[storage_mapper("durationInSeconds")]
+    fn duration_in_seconds(&self) -> SingleValueMapper<Self::Storage, u64>;
 
-    /// Block timestamp of the block where the contract got activated.
-    /// If not specified in the constructor it is the the deploy block timestamp.
-    #[view(getActivationTimestamp)]
-    #[storage_mapper("activation_timestamp")]
-    fn activation_timestamp(&self) -> SingleValueMapper<Self::Storage, u64>;
-
-    /// Optional funding cap.
-    #[view(getMaxFunds)]
-    #[storage_mapper("max_funds")]
-    fn max_funds(&self) -> SingleValueMapper<Self::Storage, Option<Self::BigUint>>;
-
-    #[storage_mapper("user")]
-    fn user_mapper(&self) -> UserMapper<Self::Storage>;
-
-    /// State of user funds.
-    /// 0 - user unknown, never `ping`-ed
-    /// 1 - `ping`-ed
-    /// 2 - `pong`-ed
-    #[view(getUserStatus)]
-    #[storage_mapper("user_status")]
-    fn user_status(&self, user_id: usize) -> SingleValueMapper<Self::Storage, UserStatus>;
-
-    /// Part of the `pongAll` status, the last user to be processed.
-    /// 0 if never called `pongAll` or `pongAll` completed..
-    #[view(pongAllLastUser)]
-    #[storage_mapper("pong_all_last_user")]
-    fn pong_all_last_user(&self) -> SingleValueMapper<Self::Storage, usize>;
+    #[view(getUserPingTimestamp)]
+    #[storage_mapper("userPingTimestamp")]
+    fn user_ping_timestamp(&self, address: &Address) -> SingleValueMapper<Self::Storage, u64>;
 }

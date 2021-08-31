@@ -9,7 +9,7 @@ build_ping_pong() {
 }
 
 deploy_ping_pong() {
-    local TOKEN_ID=0x45474c44 # "EGLD"
+    # local TOKEN_ID=0x45474c44 # "EGLD"
     local PING_AMOUNT=1500000000000000000 # 1.5 EGLD
     local DURATION=86400 # 1 day in seconds
     # local ACTIVATION_TIMESTAMP= # skipped
@@ -20,7 +20,7 @@ deploy_ping_pong() {
         --pem="$PEM_FILE" \
         $PROXY_ARGUMENT $CHAIN_ARGUMENT \
         --outfile="$OUTFILE" --recall-nonce --gas-limit=60000000 \
-        --arguments ${TOKEN_ID} ${PING_AMOUNT} ${DURATION} --send \
+        --arguments ${PING_AMOUNT} ${DURATION} --send \
         || return)
 
     local RESULT_ADDRESS=$(erdpy data parse --file="$OUTFILE" --expression="data['emitted_tx']['address']")
