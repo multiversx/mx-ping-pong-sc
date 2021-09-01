@@ -42,6 +42,8 @@ pub trait PingPong {
         Ok(())
     }
 
+    // endpoints
+
     /// User sends some tokens to be locked in the contract for a period of time.
     /// Optional `_data` argument is ignored.
     #[payable("*")]
@@ -77,10 +79,7 @@ pub trait PingPong {
         let caller = self.blockchain().get_caller();
         require!(self.did_user_ping(&caller), "Must ping first");
 
-        let user_ping_timestamp = self.user_ping_timestamp(&caller).get();
-        let duration_in_seconds = self.duration_in_seconds().get();
-        let pong_enable_timestamp = user_ping_timestamp + duration_in_seconds;
-
+        let pong_enable_timestamp = self.get_pong_enable_timestamp(&caller);
         let current_timestamp = self.blockchain().get_block_timestamp();
         require!(
             current_timestamp >= pong_enable_timestamp,
@@ -98,9 +97,41 @@ pub trait PingPong {
         Ok(())
     }
 
+    // views
+
     #[view(didUserPing)]
     fn did_user_ping(&self, address: &Address) -> bool {
         !self.user_ping_timestamp(address).is_empty()
+    }
+
+    #[view(getPongEnableTimestamp)]
+    fn get_pong_enable_timestamp(&self, address: &Address) -> u64 {
+        if !self.did_user_ping(address) {
+            return 0;
+        }
+
+        let user_ping_timestamp = self.user_ping_timestamp(address).get();
+        let duration_in_seconds = self.duration_in_seconds().get();
+        let pong_enable_timestamp = user_ping_timestamp + duration_in_seconds;
+
+        pong_enable_timestamp
+    }
+
+    #[view(getTimeToPong)]
+    fn get_time_to_pong(&self, address: &Address) -> OptionalResult<u64> {
+        if !self.did_user_ping(address) {
+            return OptionalResult::None;
+        }
+
+        let pong_enable_timestamp = self.get_pong_enable_timestamp(address);
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        if current_timestamp >= pong_enable_timestamp {
+            OptionalResult::Some(0)
+        } else {
+            let time_left = pong_enable_timestamp - current_timestamp;
+            OptionalResult::Some(time_left)
+        }
     }
 
     // storage
