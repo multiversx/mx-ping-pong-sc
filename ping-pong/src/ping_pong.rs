@@ -97,25 +97,6 @@ pub trait PingPong {
         Ok(())
     }
 
-    #[endpoint(getTimeToPong)]
-    fn get_time_to_pong(&self) -> OptionalResult<u64> {
-        let caller = self.blockchain().get_caller();
-
-        if !self.did_user_ping(&caller) {
-            return OptionalResult::None;
-        }
-
-        let pong_enable_timestamp = self.get_pong_enable_timestamp(&caller);
-        let current_timestamp = self.blockchain().get_block_timestamp();
-
-        if current_timestamp >= pong_enable_timestamp {
-            OptionalResult::Some(0)
-        } else {
-            let time_left = pong_enable_timestamp - current_timestamp;
-            OptionalResult::Some(time_left)
-        }
-    }
-
     // views
 
     #[view(didUserPing)]
@@ -133,6 +114,23 @@ pub trait PingPong {
         let duration_in_seconds = self.duration_in_seconds().get();
 
         user_ping_timestamp + duration_in_seconds
+    }
+
+    #[view(getTimeToPong)]
+    fn get_time_to_pong(&self, address: &Address) -> OptionalResult<u64> {
+        if !self.did_user_ping(address) {
+            return OptionalResult::None;
+        }
+
+        let pong_enable_timestamp = self.get_pong_enable_timestamp(address);
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        if current_timestamp >= pong_enable_timestamp {
+            OptionalResult::Some(0)
+        } else {
+            let time_left = pong_enable_timestamp - current_timestamp;
+            OptionalResult::Some(time_left)
+        }
     }
 
     // storage
