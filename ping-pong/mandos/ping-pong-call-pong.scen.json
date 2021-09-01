@@ -34,17 +34,17 @@
             "step": "checkState",
             "accounts": {
                 "address:my_address": {
-                    "nonce": "1",
+                    "nonce": "*",
                     "balance": "1,000,000",
                     "storage": {}
                 },
                 "address:participant1": {
-                    "nonce": "2",
+                    "nonce": "*",
                     "balance": "1,800,000,000,000",
                     "storage": {}
                 },
                 "address:participant2": {
-                    "nonce": "0",
+                    "nonce": "*",
                     "balance": "2,500,000,000,000",
                     "storage": {}
                 },
@@ -52,13 +52,8 @@
                     "nonce": "0",
                     "balance": "0",
                     "storage": {
-                        "str:ping_amount": "500,000,000,000",
-                        "str:activation_timestamp": "780",
-                        "str:deadline": "123,780",
-                        "str:user_address_to_id|address:participant1": "1",
-                        "str:user_id_to_address|0x0000001": "address:participant1",
-                        "str:user_status|0x0000001": "2",
-                        "str:user_count": "1"
+                        "str:pingAmount": "500,000,000,000",
+                        "str:durationInSeconds": "123,000"
                     },
                     "code": "file:../output/ping-pong.wasm"
                 }
