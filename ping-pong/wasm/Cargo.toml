@@ -18,9 +18,11 @@ debug = false
 panic = "abort"
 
 [dependencies.ping-pong]
-features = [ "wasm-output-mode",]
 path = ".."
 
+[dependencies.elrond-wasm-node]
+version = "0.22.10"
+
 [dependencies.elrond-wasm-output]
-version = "0.18.2"
-features = [ "wasm-output-mode",]
+version = "0.22.10"
+features = ["wasm-output-mode"]

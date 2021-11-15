@@ -1,6 +1,6 @@
 {
     "name": "try withdraw the funds again by calling pong a second time",
-    "gasSchedule": "v3",
+    "gasSchedule": "v4",
     "steps": [
         {
             "step": "externalSteps",

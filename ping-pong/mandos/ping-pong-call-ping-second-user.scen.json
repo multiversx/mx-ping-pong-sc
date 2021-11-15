@@ -1,6 +1,6 @@
 {
     "name": "call ping for a second user",
-    "gasSchedule": "v3",
+    "gasSchedule": "v4",
     "steps": [
         {
             "step": "externalSteps",
@@ -53,6 +53,7 @@
                     "storage": {
                         "str:pingAmount": "500,000,000,000",
                         "str:durationInSeconds": "123,000",
+                        "str:acceptedPaymentTokenId": "str:EGLD",
                         "str:userPingTimestamp|address:participant1": "781",
                         "str:userPingTimestamp|address:participant2": "781"
                     },

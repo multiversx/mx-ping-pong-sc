@@ -1,6 +1,6 @@
 {
     "name": "extracting the funds by calling pong after the deadline has passed",
-    "gasSchedule": "v3",
+    "gasSchedule": "v4",
     "steps": [
         {
             "step": "externalSteps",
@@ -53,7 +53,8 @@
                     "balance": "0",
                     "storage": {
                         "str:pingAmount": "500,000,000,000",
-                        "str:durationInSeconds": "123,000"
+                        "str:durationInSeconds": "123,000",
+                        "str:acceptedPaymentTokenId": "str:EGLD"
                     },
                     "code": "file:../output/ping-pong.wasm"
                 }
