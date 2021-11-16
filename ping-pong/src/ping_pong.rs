@@ -18,7 +18,7 @@ pub trait PingPong {
     #[init]
     fn init(
         &self,
-        ping_amount: Self::BigUint,
+        ping_amount: BigUint,
         duration_in_seconds: u64,
         #[var_args] opt_token_id: OptionalArg<TokenIdentifier>,
     ) -> SCResult<()> {
@@ -31,13 +31,11 @@ pub trait PingPong {
         );
         self.duration_in_seconds().set(&duration_in_seconds);
 
-        let token_id = opt_token_id
-            .into_option()
-            .unwrap_or_else(TokenIdentifier::egld);
-        require!(
-            token_id.is_egld() || token_id.is_valid_esdt_identifier(),
-            "Invalid token provided"
-        );
+        let token_id = match opt_token_id {
+            OptionalArg::Some(t) => t,
+            OptionalArg::None => TokenIdentifier::egld(),
+        };
+        self.accepted_payment_token_id().set(&token_id);
 
         Ok(())
     }
@@ -51,7 +49,7 @@ pub trait PingPong {
     fn ping(
         &self,
         #[payment_token] payment_token: TokenIdentifier,
-        #[payment_amount] payment_amount: Self::BigUint,
+        #[payment_amount] payment_amount: BigUint,
     ) -> SCResult<()> {
         require!(
             payment_token == self.accepted_payment_token_id().get(),
@@ -100,12 +98,12 @@ pub trait PingPong {
     // views
 
     #[view(didUserPing)]
-    fn did_user_ping(&self, address: &Address) -> bool {
+    fn did_user_ping(&self, address: &ManagedAddress) -> bool {
         !self.user_ping_timestamp(address).is_empty()
     }
 
     #[view(getPongEnableTimestamp)]
-    fn get_pong_enable_timestamp(&self, address: &Address) -> u64 {
+    fn get_pong_enable_timestamp(&self, address: &ManagedAddress) -> u64 {
         if !self.did_user_ping(address) {
             return 0;
         }
@@ -117,7 +115,7 @@ pub trait PingPong {
     }
 
     #[view(getTimeToPong)]
-    fn get_time_to_pong(&self, address: &Address) -> OptionalResult<u64> {
+    fn get_time_to_pong(&self, address: &ManagedAddress) -> OptionalResult<u64> {
         if !self.did_user_ping(address) {
             return OptionalResult::None;
         }
@@ -137,17 +135,17 @@ pub trait PingPong {
 
     #[view(getAcceptedPaymentToken)]
     #[storage_mapper("acceptedPaymentTokenId")]
-    fn accepted_payment_token_id(&self) -> SingleValueMapper<Self::Storage, TokenIdentifier>;
+    fn accepted_payment_token_id(&self) -> SingleValueMapper<TokenIdentifier>;
 
     #[view(getPingAmount)]
     #[storage_mapper("pingAmount")]
-    fn ping_amount(&self) -> SingleValueMapper<Self::Storage, Self::BigUint>;
+    fn ping_amount(&self) -> SingleValueMapper<BigUint>;
 
     #[view(getDurationTimestamp)]
     #[storage_mapper("durationInSeconds")]
-    fn duration_in_seconds(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn duration_in_seconds(&self) -> SingleValueMapper<u64>;
 
     #[view(getUserPingTimestamp)]
     #[storage_mapper("userPingTimestamp")]
-    fn user_ping_timestamp(&self, address: &Address) -> SingleValueMapper<Self::Storage, u64>;
+    fn user_ping_timestamp(&self, address: &ManagedAddress) -> SingleValueMapper<u64>;
 }

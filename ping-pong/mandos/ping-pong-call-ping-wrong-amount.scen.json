@@ -1,6 +1,6 @@
 {
     "name": "try to ping the wrong ammount of funds",
-    "gasSchedule": "v3",
+    "gasSchedule": "v4",
     "steps": [
         {
             "step": "externalSteps",
