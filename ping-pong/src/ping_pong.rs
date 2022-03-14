@@ -20,7 +20,7 @@ pub trait PingPong {
         &self,
         ping_amount: BigUint,
         duration_in_seconds: u64,
-        #[var_args] opt_token_id: OptionalArg<TokenIdentifier>,
+        #[var_args] opt_token_id: OptionalValue<TokenIdentifier>,
     ) -> SCResult<()> {
         require!(ping_amount > 0, "Ping amount cannot be set to zero");
         self.ping_amount().set(&ping_amount);
@@ -32,8 +32,8 @@ pub trait PingPong {
         self.duration_in_seconds().set(&duration_in_seconds);
 
         let token_id = match opt_token_id {
-            OptionalArg::Some(t) => t,
-            OptionalArg::None => TokenIdentifier::egld(),
+            OptionalValue::Some(t) => t,
+            OptionalValue::None => TokenIdentifier::egld(),
         };
         self.accepted_payment_token_id().set(&token_id);
 
@@ -115,19 +115,19 @@ pub trait PingPong {
     }
 
     #[view(getTimeToPong)]
-    fn get_time_to_pong(&self, address: &ManagedAddress) -> OptionalResult<u64> {
+    fn get_time_to_pong(&self, address: &ManagedAddress) -> OptionalValue<u64> {
         if !self.did_user_ping(address) {
-            return OptionalResult::None;
+            return OptionalValue::None;
         }
 
         let pong_enable_timestamp = self.get_pong_enable_timestamp(address);
         let current_timestamp = self.blockchain().get_block_timestamp();
 
         if current_timestamp >= pong_enable_timestamp {
-            OptionalResult::Some(0)
+            OptionalValue::Some(0)
         } else {
             let time_left = pong_enable_timestamp - current_timestamp;
-            OptionalResult::Some(time_left)
+            OptionalValue::Some(time_left)
         }
     }
 

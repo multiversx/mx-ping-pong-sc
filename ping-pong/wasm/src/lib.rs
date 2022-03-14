@@ -7,7 +7,6 @@
 elrond_wasm_node::wasm_endpoints! {
     ping_pong
     (
-        init
         didUserPing
         getAcceptedPaymentToken
         getDurationTimestamp
