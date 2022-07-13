@@ -20,8 +20,8 @@ pub trait PingPong {
         &self,
         ping_amount: BigUint,
         duration_in_seconds: u64,
-        #[var_args] opt_token_id: OptionalValue<TokenIdentifier>,
-    ) -> SCResult<()> {
+        opt_token_id: OptionalValue<EgldOrEsdtTokenIdentifier>,
+    ) {
         require!(ping_amount > 0, "Ping amount cannot be set to zero");
         self.ping_amount().set(&ping_amount);
 
@@ -33,24 +33,18 @@ pub trait PingPong {
 
         let token_id = match opt_token_id {
             OptionalValue::Some(t) => t,
-            OptionalValue::None => TokenIdentifier::egld(),
+            OptionalValue::None => EgldOrEsdtTokenIdentifier::egld(),
         };
         self.accepted_payment_token_id().set(&token_id);
-
-        Ok(())
     }
 
     // endpoints
 
     /// User sends some tokens to be locked in the contract for a period of time.
-    /// Optional `_data` argument is ignored.
     #[payable("*")]
     #[endpoint]
-    fn ping(
-        &self,
-        #[payment_token] payment_token: TokenIdentifier,
-        #[payment_amount] payment_amount: BigUint,
-    ) -> SCResult<()> {
+    fn ping(&self) {
+        let (payment_token, payment_amount) = self.call_value().egld_or_single_fungible_esdt();
         require!(
             payment_token == self.accepted_payment_token_id().get(),
             "Invalid payment token"
@@ -66,14 +60,12 @@ pub trait PingPong {
         let current_block_timestamp = self.blockchain().get_block_timestamp();
         self.user_ping_timestamp(&caller)
             .set(&current_block_timestamp);
-
-        Ok(())
     }
 
     /// User can take back funds from the contract.
     /// Can only be called after expiration.
     #[endpoint]
-    fn pong(&self) -> SCResult<()> {
+    fn pong(&self) {
         let caller = self.blockchain().get_caller();
         require!(self.did_user_ping(&caller), "Must ping first");
 
@@ -89,10 +81,8 @@ pub trait PingPong {
         let token_id = self.accepted_payment_token_id().get();
         let amount = self.ping_amount().get();
 
-        self.send()
-            .direct(&caller, &token_id, 0, &amount, b"pong successful");
-
-        Ok(())
+        self.send().direct(&caller, &token_id, 0, &amount);
+        self.pong_event(&caller);
     }
 
     // views
@@ -135,7 +125,7 @@ pub trait PingPong {
 
     #[view(getAcceptedPaymentToken)]
     #[storage_mapper("acceptedPaymentTokenId")]
-    fn accepted_payment_token_id(&self) -> SingleValueMapper<TokenIdentifier>;
+    fn accepted_payment_token_id(&self) -> SingleValueMapper<EgldOrEsdtTokenIdentifier>;
 
     #[view(getPingAmount)]
     #[storage_mapper("pingAmount")]
@@ -148,4 +138,9 @@ pub trait PingPong {
     #[view(getUserPingTimestamp)]
     #[storage_mapper("userPingTimestamp")]
     fn user_ping_timestamp(&self, address: &ManagedAddress) -> SingleValueMapper<u64>;
+
+    // events
+
+    #[event("pongEvent")]
+    fn pong_event(&self, #[indexed] user: &ManagedAddress);
 }
