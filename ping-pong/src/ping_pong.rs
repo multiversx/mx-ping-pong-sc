@@ -1,6 +1,6 @@
 #![no_std]
 
-elrond_wasm::imports!();
+multiversx_sc::imports!();
 
 /// A contract that allows anyone to send a fixed sum, locks it for a while and then allows users to take it back.
 /// Sending funds to the contract is called "ping".
@@ -9,7 +9,7 @@ elrond_wasm::imports!();
 /// Restrictions:
 /// - Only the set amount can be `ping`-ed, no more, no less.
 /// - `pong` can only be called after a certain period after `ping`.
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait PingPong {
     /// Necessary configuration when deploying:
     /// `ping_amount` - the exact amount that needs to be sent when `ping`-ing.  
