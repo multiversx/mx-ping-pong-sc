@@ -29,7 +29,7 @@ pub trait PingPong {
             duration_in_seconds > 0,
             "Duration in seconds cannot be set to zero"
         );
-        self.duration_in_seconds().set(&duration_in_seconds);
+        self.duration_in_seconds().set(duration_in_seconds);
 
         let token_id = match opt_token_id {
             OptionalValue::Some(t) => t,
@@ -59,7 +59,7 @@ pub trait PingPong {
 
         let current_block_timestamp = self.blockchain().get_block_timestamp();
         self.user_ping_timestamp(&caller)
-            .set(&current_block_timestamp);
+            .set(current_block_timestamp);
     }
 
     /// User can take back funds from the contract.
