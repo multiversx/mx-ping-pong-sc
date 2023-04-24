@@ -1,7 +1,7 @@
 {
     "configurations": {
         "default": {
-            "proxy": "https://devnet-api.elrond.com",
+            "proxy": "https://devnet-api.multiversx.com",
             "chainID": "D"
         }
     },
