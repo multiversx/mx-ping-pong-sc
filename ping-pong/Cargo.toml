@@ -8,7 +8,6 @@ publish = false
 [lib]
 path = "src/ping_pong.rs"
 [dependencies.multiversx-sc]
-version = "0.39.5"
-
+version = "0.41.3"
 [dev-dependencies.multiversx-sc-scenario]
-version = "0.39.5"
+version = "0.41.3"
