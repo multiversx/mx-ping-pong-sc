@@ -10,7 +10,7 @@
 // Total number of exported functions:  11
 
 #![no_std]
-#![feature(alloc_error_handler, lang_items)]
+#![feature(lang_items)]
 
 multiversx_sc_wasm_adapter::allocator!();
 multiversx_sc_wasm_adapter::panic_handler!();
@@ -18,16 +18,17 @@ multiversx_sc_wasm_adapter::panic_handler!();
 multiversx_sc_wasm_adapter::endpoints! {
     ping_pong
     (
-        ping
-        pong
-        didUserPing
-        getPongEnableTimestamp
-        getTimeToPong
-        getAcceptedPaymentToken
-        getPingAmount
-        getDurationTimestamp
-        getUserPingTimestamp
+        init => init
+        ping => ping
+        pong => pong
+        didUserPing => did_user_ping
+        getPongEnableTimestamp => get_pong_enable_timestamp
+        getTimeToPong => get_time_to_pong
+        getAcceptedPaymentToken => accepted_payment_token_id
+        getPingAmount => ping_amount
+        getDurationTimestamp => duration_in_seconds
+        getUserPingTimestamp => user_ping_timestamp
     )
 }
 
-multiversx_sc_wasm_adapter::empty_callback! {}
+multiversx_sc_wasm_adapter::async_callback_empty! {}
