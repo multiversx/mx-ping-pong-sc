@@ -10,48 +10,45 @@ fn world() -> ScenarioWorld {
 
 #[test]
 fn ping_pong_call_ping_rs() {
-    multiversx_sc_scenario::run_rs("mandos/ping-pong-call-ping.scen.json", world());
+    world().run("scenarios/ping-pong-call-ping.scen.json");
 }
 
 #[test]
 fn ping_pong_call_ping_second_user_rs() {
-    multiversx_sc_scenario::run_rs("mandos/ping-pong-call-ping-second-user.scen.json", world());
+    world().run("scenarios/ping-pong-call-ping-second-user.scen.json");
 }
 
 #[test]
 fn ping_pong_call_ping_twice_rs() {
-    multiversx_sc_scenario::run_rs("mandos/ping-pong-call-ping-twice.scen.json", world());
+    world().run("scenarios/ping-pong-call-ping-twice.scen.json");
 }
 
 #[test]
 fn ping_pong_call_ping_wrong_amount_rs() {
-    multiversx_sc_scenario::run_rs("mandos/ping-pong-call-ping-wrong-amount.scen.json", world());
+    world().run("scenarios/ping-pong-call-ping-wrong-amount.scen.json");
 }
 
 #[test]
 fn ping_pong_call_pong_rs() {
-    multiversx_sc_scenario::run_rs("mandos/ping-pong-call-pong.scen.json", world());
+    world().run("scenarios/ping-pong-call-pong.scen.json");
 }
 
 #[test]
 fn ping_pong_call_pong_before_deadline_rs() {
-    multiversx_sc_scenario::run_rs(
-        "mandos/ping-pong-call-pong-before-deadline.scen.json",
-        world(),
-    );
+    world().run("scenarios/ping-pong-call-pong-before-deadline.scen.json");
 }
 
 #[test]
 fn ping_pong_call_pong_twice_rs() {
-    multiversx_sc_scenario::run_rs("mandos/ping-pong-call-pong-twice.scen.json", world());
+    world().run("scenarios/ping-pong-call-pong-twice.scen.json");
 }
 
 #[test]
 fn ping_pong_call_pong_without_ping_rs() {
-    multiversx_sc_scenario::run_rs("mandos/ping-pong-call-pong-without-ping.scen.json", world());
+    world().run("scenarios/ping-pong-call-pong-without-ping.scen.json");
 }
 
 #[test]
 fn ping_pong_init_rs() {
-    multiversx_sc_scenario::run_rs("mandos/ping-pong-init.scen.json", world());
+    world().run("scenarios/ping-pong-init.scen.json");
 }
