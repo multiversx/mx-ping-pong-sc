@@ -2,12 +2,14 @@
 name = "ping-pong"
 version = "0.0.2"
 authors = ["Bruda Claudiu-Marcel <claudiu725@yahoo.com>"]
-edition = "2018"
+edition = "2021"
 publish = false
 
 [lib]
 path = "src/ping_pong.rs"
+
 [dependencies.multiversx-sc]
-version = "0.42.0"
+version = "0.52.3"
+
 [dev-dependencies.multiversx-sc-scenario]
-version = "0.42.0"
+version = "0.52.3"

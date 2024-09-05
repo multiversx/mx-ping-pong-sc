@@ -1,6 +1,6 @@
 #![no_std]
 
-multiversx_sc::imports!();
+use multiversx_sc::imports::*;
 
 /// A contract that allows anyone to send a fixed sum, locks it for a while and then allows users to take it back.
 /// Sending funds to the contract is called "ping".
