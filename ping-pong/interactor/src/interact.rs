@@ -11,7 +11,7 @@ use multiversx_sc_snippets::imports::*;
 
 const INTERACTOR_SCENARIO_TRACE_PATH: &str = "interactor_trace.scen.json";
 
-const PING_PONG_CODE: MxscPath = MxscPath::new("../output/ping-pong-egld.mxsc.json");
+const PING_PONG_CODE: MxscPath = MxscPath::new("../output/ping-pong.mxsc.json");
 
 pub async fn ping_pong_egld_cli() {
     env_logger::init();
@@ -122,7 +122,7 @@ impl PingPongEgldInteract {
             .with_tracer(INTERACTOR_SCENARIO_TRACE_PATH)
             .await;
 
-        interactor.set_current_dir_from_workspace("contracts/examples/ping-pong-egld/interactor");
+        interactor.set_current_dir_from_workspace("ping-pong/interactor");
         let ping_pong_owner_address = interactor.register_wallet(test_wallets::eve()).await;
         let wallet_address = interactor.register_wallet(test_wallets::mallory()).await;
 
