@@ -208,8 +208,6 @@ impl PingPongEgldInteract {
     }
 
     pub async fn ping(&mut self, egld_amount: u64, message: Option<&str>, sender: &Bech32Address) {
-        let _data: IgnoreValue = IgnoreValue;
-
         let response = self
             .interactor
             .tx()
@@ -217,7 +215,7 @@ impl PingPongEgldInteract {
             .to(self.state.current_ping_pong_egld_address())
             .gas(30_000_000u64)
             .typed(proxy_ping_pong_egld::PingPongProxy)
-            .ping(_data)
+            .ping()
             .egld(egld_amount)
             .returns(ReturnsHandledOrError::new())
             .run()

@@ -65,10 +65,9 @@ pub trait PingPong {
     }
 
     /// User sends some EGLD to be locked in the contract for a period of time.
-    /// Optional `_data` argument is ignored.
     #[payable("EGLD")]
     #[endpoint]
-    fn ping(&self, _data: IgnoreValue) {
+    fn ping(&self) {
         let payment = self.call_value().egld_value();
 
         require!(
@@ -104,13 +103,13 @@ pub trait PingPong {
         match user_status {
             UserStatus::New => {
                 self.user_status(user_id).set(UserStatus::Registered);
-            },
+            }
             UserStatus::Registered => {
                 sc_panic!("can only ping once")
-            },
+            }
             UserStatus::Withdrawn => {
                 sc_panic!("already withdrawn")
-            },
+            }
         }
 
         self.ping_event(&caller, &payment);
@@ -130,7 +129,7 @@ pub trait PingPong {
                 } else {
                     Result::Err("unknown user")
                 }
-            },
+            }
             UserStatus::Withdrawn => Result::Err("already withdrawn"),
         }
     }
@@ -224,7 +223,7 @@ pub trait PingPong {
     fn deadline(&self) -> SingleValueMapper<u64>;
 
     /// Block timestamp of the block where the contract got activated.
-    /// If not specified in the constructor it is the the deploy block timestamp.
+    /// If not specified in the constructor it is the deploy block timestamp.
     #[view(getActivationTimestamp)]
     #[storage_mapper("activationTimestamp")]
     fn activation_timestamp(&self) -> SingleValueMapper<u64>;

@@ -113,16 +113,11 @@ where
     Gas: TxGas<Env>,
 {
     /// User sends some EGLD to be locked in the contract for a period of time. 
-    /// Optional `_data` argument is ignored. 
-    pub fn ping<
-        Arg0: ProxyArg<IgnoreValue>,
-    >(
+    pub fn ping(
         self,
-        _data: Arg0,
     ) -> TxTypedCall<Env, From, To, (), Gas, ()> {
         self.wrapped_tx
             .raw_call("ping")
-            .argument(&_data)
             .original_result()
     }
 
@@ -192,7 +187,7 @@ where
     }
 
     /// Block timestamp of the block where the contract got activated. 
-    /// If not specified in the constructor it is the the deploy block timestamp. 
+    /// If not specified in the constructor it is the deploy block timestamp. 
     pub fn activation_timestamp(
         self,
     ) -> TxTypedCall<Env, From, To, NotPayable, Gas, u64> {
