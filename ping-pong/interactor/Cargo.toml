@@ -1,0 +1,36 @@
+[[bin]]
+name = "ping-pong-interact"
+path = "src/interact_main.rs"
+
+[package]
+name = "ping-pong-interact"
+version = "0.0.0"
+authors = ["MultiversX <contact@multiversx.com>"]
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/interact.rs"
+
+[dependencies]
+toml = "0.8.6"
+
+[dependencies.clap]
+version = "4.4.7"
+features = ["derive"]
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+
+[dependencies.tokio]
+version = "1.24"
+
+[dependencies.ping-pong]
+path = ".."
+
+[dependencies.multiversx-sc-snippets]
+version = "0.54.6"
+
+[features]
+chain-simulator-tests = []

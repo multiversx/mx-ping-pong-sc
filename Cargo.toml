@@ -1,5 +1,3 @@
 [workspace]
-members = [
-  "ping-pong",
-  "ping-pong/meta"
-]
+resolver = "2"
+members = ["ping-pong", "ping-pong/meta", "ping-pong/interactor"]
