@@ -16,6 +16,7 @@ jobs:
     uses: multiversx/mx-sc-actions/.github/workflows/contracts.yml@v4.1.0
     with:
       rust-toolchain: stable
+      mx-scenario-go-version: v3.0.0
       enable-contracts-size-report: false
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
