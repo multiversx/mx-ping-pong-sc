@@ -22,13 +22,15 @@ multiversx_sc_wasm_adapter::endpoints! {
         upgrade => upgrade
         ping => ping
         pong => pong
-        didUserPing => did_user_ping
-        getPongEnableTimestamp => get_pong_enable_timestamp
-        getTimeToPong => get_time_to_pong
-        getAcceptedPaymentToken => accepted_payment_token_id
+        pongAll => pong_all
+        getUserAddresses => get_user_addresses
+        getContractState => get_contract_state
         getPingAmount => ping_amount
-        getDurationTimestamp => duration_in_seconds
-        getUserPingTimestamp => user_ping_timestamp
+        getDeadline => deadline
+        getActivationTimestamp => activation_timestamp
+        getMaxFunds => max_funds
+        getUserStatus => user_status
+        pongAllLastUser => pong_all_last_user
     )
 }
 
