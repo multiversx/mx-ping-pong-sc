@@ -56,7 +56,7 @@
                         "str:durationInSeconds": "123,000",
                         "str:acceptedPaymentTokenId": "str:EGLD"
                     },
-                    "code": "file:../output/ping-pong.wasm"
+                    "code": "mxsc:../output/ping-pong.mxsc.json"
                 }
             }
         }
