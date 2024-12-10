@@ -2,23 +2,39 @@
 
 use multiversx_sc::imports::*;
 
+pub mod proxy_ping_pong_egld;
+mod types;
+
+use types::{ContractState, UserStatus};
+
+/// Derived empirically.
+const PONG_ALL_LOW_GAS_LIMIT: u64 = 3_000_000;
+
 /// A contract that allows anyone to send a fixed sum, locks it for a while and then allows users to take it back.
 /// Sending funds to the contract is called "ping".
 /// Taking the same funds back is called "pong".
 ///
 /// Restrictions:
+/// - `ping` can be called only after the contract is activated. By default the contract is activated on deploy.
+/// - Users can only `ping` once, ever.
 /// - Only the set amount can be `ping`-ed, no more, no less.
-/// - `pong` can only be called after a certain period after `ping`.
+/// - The contract can optionally have a maximum cap. No more users can `ping` after the cap has been reached.
+/// - The `ping` endpoint optionally accepts
+/// - `pong` can only be called after the contract expired (a certain duration has passed since activation).
+/// - `pongAll` can be used to send to all users to `ping`-ed. If it runs low on gas, it will interrupt itself.
+/// It can be continued anytime.
 #[multiversx_sc::contract]
 pub trait PingPong {
     /// Necessary configuration when deploying:
-    /// `ping_amount` - the exact amount that needs to be sent when `ping`-ing.  
-    /// `duration_in_seconds` - how much time (in seconds) until `pong` can be called after the initial `ping` call  
-    /// `token_id` - Optional. The Token Identifier of the token that is going to be used. Default is "EGLD".
+    /// `ping_amount` - the exact EGLD amount that needs to be sent when `ping`-ing.
+    /// `duration_in_seconds` - how much time (in seconds) until contract expires.
+    /// `opt_activation_timestamp` - optionally specify the contract to only activate at a later date.
+    /// `max_funds` - optional funding cap, no more funds than this can be added to the contract.
+    #[allow_multiple_var_args]
     #[init]
     fn init(
         &self,
-        ping_amount: BigUint,
+        ping_amount: &BigUint,
         duration_in_seconds: u64,
         opt_token_id: OptionalValue<EgldOrEsdtTokenIdentifier>,
     ) {
@@ -53,103 +69,204 @@ pub trait PingPong {
     #[payable("*")]
     #[endpoint]
     fn ping(&self) {
-        let (payment_token, payment_amount) = self.call_value().egld_or_single_fungible_esdt();
+        let payment = self.call_value().egld_value();
+
         require!(
-            payment_token == self.accepted_payment_token_id().get(),
-            "Invalid payment token"
+            *payment == self.ping_amount().get(),
+            "the payment must match the fixed sum"
         );
+
+        let block_timestamp = self.blockchain().get_block_timestamp();
         require!(
-            payment_amount == self.ping_amount().get(),
-            "The payment must match the fixed ping amount"
+            self.activation_timestamp().get() <= block_timestamp,
+            "smart contract not active yet"
         );
+
+        require!(
+            block_timestamp < self.deadline().get(),
+            "deadline has passed"
+        );
+
+        if let Some(max_funds) = self.max_funds().get() {
+            require!(
+                &self
+                    .blockchain()
+                    .get_sc_balance(&EgldOrEsdtTokenIdentifier::egld(), 0)
+                    + &*payment
+                    <= max_funds,
+                "smart contract full"
+            );
+        }
 
         let caller = self.blockchain().get_caller();
-        require!(!self.did_user_ping(&caller), "Already pinged");
+        let user_id = self.user_mapper().get_or_create_user(&caller);
+        let user_status = self.user_status(user_id).get();
+        match user_status {
+            UserStatus::New => {
+                self.user_status(user_id).set(UserStatus::Registered);
+            }
+            UserStatus::Registered => {
+                sc_panic!("can only ping once")
+            }
+            UserStatus::Withdrawn => {
+                sc_panic!("already withdrawn")
+            }
+        }
 
-        let current_block_timestamp = self.blockchain().get_block_timestamp();
-        self.user_ping_timestamp(&caller)
-            .set(current_block_timestamp);
+        self.ping_event(&caller, &payment);
+    }
+
+    fn pong_by_user_id(&self, user_id: usize) -> Result<(), &'static str> {
+        let user_status = self.user_status(user_id).get();
+        match user_status {
+            UserStatus::New => Result::Err("can't pong, never pinged"),
+            UserStatus::Registered => {
+                self.user_status(user_id).set(UserStatus::Withdrawn);
+                if let Some(user_address) = self.user_mapper().get_user_address(user_id) {
+                    let amount = self.ping_amount().get();
+                    self.tx().to(&user_address).egld(&amount).transfer();
+                    self.pong_event(&user_address, &amount);
+                    Result::Ok(())
+                } else {
+                    Result::Err("unknown user")
+                }
+            }
+            UserStatus::Withdrawn => Result::Err("already withdrawn"),
+        }
     }
 
     /// User can take back funds from the contract.
     /// Can only be called after expiration.
     #[endpoint]
     fn pong(&self) {
-        let caller = self.blockchain().get_caller();
-        require!(self.did_user_ping(&caller), "Must ping first");
-
-        let pong_enable_timestamp = self.get_pong_enable_timestamp(&caller);
-        let current_timestamp = self.blockchain().get_block_timestamp();
         require!(
-            current_timestamp >= pong_enable_timestamp,
-            "Cannot pong before deadline"
+            self.blockchain().get_block_timestamp() >= self.deadline().get(),
+            "can't withdraw before deadline"
         );
 
-        self.user_ping_timestamp(&caller).clear();
-
-        let token_id = self.accepted_payment_token_id().get();
-        let amount = self.ping_amount().get();
-
-        self.send().direct(&caller, &token_id, 0, &amount);
-        self.pong_event(&caller);
+        let caller = self.blockchain().get_caller();
+        let user_id = self.user_mapper().get_user_id(&caller);
+        let pong_result = self.pong_by_user_id(user_id);
+        if let Result::Err(message) = pong_result {
+            sc_panic!(message);
+        }
     }
 
-    // views
+    /// Send back funds to all users who pinged.
+    /// Returns
+    /// - `completed` if everything finished
+    /// - `interrupted` if run out of gas midway.
+    /// Can only be called after expiration.
+    #[endpoint(pongAll)]
+    fn pong_all(&self) -> OperationCompletionStatus {
+        let now = self.blockchain().get_block_timestamp();
+        require!(
+            now >= self.deadline().get(),
+            "can't withdraw before deadline"
+        );
 
-    #[view(didUserPing)]
-    fn did_user_ping(&self, address: &ManagedAddress) -> bool {
-        !self.user_ping_timestamp(address).is_empty()
-    }
+        let num_users = self.user_mapper().get_user_count();
+        let mut pong_all_last_user = self.pong_all_last_user().get();
+        let mut status = OperationCompletionStatus::InterruptedBeforeOutOfGas;
+        loop {
+            if pong_all_last_user >= num_users {
+                // clear field and reset to 0
+                pong_all_last_user = 0;
+                self.pong_all_last_user().set(pong_all_last_user);
+                status = OperationCompletionStatus::Completed;
+                break;
+            }
 
-    #[view(getPongEnableTimestamp)]
-    fn get_pong_enable_timestamp(&self, address: &ManagedAddress) -> u64 {
-        if !self.did_user_ping(address) {
-            return 0;
+            if self.blockchain().get_gas_left() < PONG_ALL_LOW_GAS_LIMIT {
+                self.pong_all_last_user().set(pong_all_last_user);
+                break;
+            }
+
+            pong_all_last_user += 1;
+
+            // in case of error just ignore the error and skip
+            let _ = self.pong_by_user_id(pong_all_last_user);
         }
 
-        let user_ping_timestamp = self.user_ping_timestamp(address).get();
-        let duration_in_seconds = self.duration_in_seconds().get();
+        self.pong_all_event(now, &status, pong_all_last_user);
 
-        user_ping_timestamp + duration_in_seconds
+        status
     }
 
-    #[view(getTimeToPong)]
-    fn get_time_to_pong(&self, address: &ManagedAddress) -> OptionalValue<u64> {
-        if !self.did_user_ping(address) {
-            return OptionalValue::None;
-        }
+    /// Lists the addresses of all users that have `ping`-ed,
+    /// in the order they have `ping`-ed
+    #[view(getUserAddresses)]
+    fn get_user_addresses(&self) -> MultiValueEncoded<ManagedAddress> {
+        self.user_mapper().get_all_addresses().into()
+    }
 
-        let pong_enable_timestamp = self.get_pong_enable_timestamp(address);
-        let current_timestamp = self.blockchain().get_block_timestamp();
-
-        if current_timestamp >= pong_enable_timestamp {
-            OptionalValue::Some(0)
-        } else {
-            let time_left = pong_enable_timestamp - current_timestamp;
-            OptionalValue::Some(time_left)
+    /// Returns the current contract state as a struct
+    /// for faster fetching from external parties
+    #[view(getContractState)]
+    fn get_contract_state(&self) -> ContractState<Self::Api> {
+        ContractState {
+            ping_amount: self.ping_amount().get(),
+            deadline: self.deadline().get(),
+            activation_timestamp: self.activation_timestamp().get(),
+            max_funds: self.max_funds().get(),
+            pong_all_last_user: self.pong_all_last_user().get(),
         }
     }
 
     // storage
 
-    #[view(getAcceptedPaymentToken)]
-    #[storage_mapper("acceptedPaymentTokenId")]
-    fn accepted_payment_token_id(&self) -> SingleValueMapper<EgldOrEsdtTokenIdentifier>;
-
     #[view(getPingAmount)]
     #[storage_mapper("pingAmount")]
     fn ping_amount(&self) -> SingleValueMapper<BigUint>;
 
-    #[view(getDurationTimestamp)]
-    #[storage_mapper("durationInSeconds")]
-    fn duration_in_seconds(&self) -> SingleValueMapper<u64>;
+    #[view(getDeadline)]
+    #[storage_mapper("deadline")]
+    fn deadline(&self) -> SingleValueMapper<u64>;
 
-    #[view(getUserPingTimestamp)]
-    #[storage_mapper("userPingTimestamp")]
-    fn user_ping_timestamp(&self, address: &ManagedAddress) -> SingleValueMapper<u64>;
+    /// Block timestamp of the block where the contract got activated.
+    /// If not specified in the constructor it is the deploy block timestamp.
+    #[view(getActivationTimestamp)]
+    #[storage_mapper("activationTimestamp")]
+    fn activation_timestamp(&self) -> SingleValueMapper<u64>;
+
+    /// Optional funding cap.
+    #[view(getMaxFunds)]
+    #[storage_mapper("maxFunds")]
+    fn max_funds(&self) -> SingleValueMapper<Option<BigUint>>;
+
+    #[storage_mapper("user")]
+    fn user_mapper(&self) -> UserMapper;
+
+    /// State of user funds.
+    /// 0 - user unknown, never `ping`-ed
+    /// 1 - `ping`-ed
+    /// 2 - `pong`-ed
+    #[view(getUserStatus)]
+    #[storage_mapper("userStatus")]
+    fn user_status(&self, user_id: usize) -> SingleValueMapper<UserStatus>;
+
+    /// Part of the `pongAll` status, the last user to be processed.
+    /// 0 if never called `pongAll` or `pongAll` completed.
+    #[view(pongAllLastUser)]
+    #[storage_mapper("pongAllLastUser")]
+    fn pong_all_last_user(&self) -> SingleValueMapper<usize>;
 
     // events
 
-    #[event("pongEvent")]
-    fn pong_event(&self, #[indexed] user: &ManagedAddress);
+    /// Signals a successful ping by user with amount
+    #[event]
+    fn ping_event(&self, #[indexed] caller: &ManagedAddress, pinged_amount: &BigUint);
+
+    /// Signals a successful pong by user with amount
+    #[event]
+    fn pong_event(&self, #[indexed] caller: &ManagedAddress, ponged_amount: &BigUint);
+
+    /// Signals the beginning of the pong_all operation, status and last user
+    #[event]
+    fn pong_all_event(
+        &self,
+        #[indexed] timestamp: u64,
+        #[indexed] status: &OperationCompletionStatus,
+        #[indexed] pong_all_last_user: usize,
+    );
 }
