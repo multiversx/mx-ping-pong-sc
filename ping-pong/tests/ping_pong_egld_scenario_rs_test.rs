@@ -3,36 +3,13 @@ use multiversx_sc_scenario::*;
 fn world() -> ScenarioWorld {
     let mut blockchain = ScenarioWorld::new();
 
-    blockchain.register_contract(
-        "mxsc:output/ping-pong.mxsc.json",
-        ping_pong::ContractBuilder,
-    );
+    blockchain.register_contract("file:output/ping-pong.wasm", ping_pong::ContractBuilder);
     blockchain
-}
-
-#[test]
-fn ping_pong_call_get_user_addresses_rs() {
-    world().run("scenarios/ping-pong-call-get-user-addresses.scen.json");
 }
 
 #[test]
 fn ping_pong_call_ping_rs() {
     world().run("scenarios/ping-pong-call-ping.scen.json");
-}
-
-#[test]
-fn ping_pong_call_ping_after_deadline_rs() {
-    world().run("scenarios/ping-pong-call-ping-after-deadline.scen.json");
-}
-
-#[test]
-fn ping_pong_call_ping_before_activation_rs() {
-    world().run("scenarios/ping-pong-call-ping-before-activation.scen.json");
-}
-
-#[test]
-fn ping_pong_call_ping_before_beginning_rs() {
-    world().run("scenarios/ping-pong-call-ping-before-beginning.scen.json");
 }
 
 #[test]
@@ -46,23 +23,13 @@ fn ping_pong_call_ping_twice_rs() {
 }
 
 #[test]
-fn ping_pong_call_ping_wrong_ammount_rs() {
-    world().run("scenarios/ping-pong-call-ping-wrong-ammount.scen.json");
+fn ping_pong_call_ping_wrong_amount_rs() {
+    world().run("scenarios/ping-pong-call-ping-wrong-amount.scen.json");
 }
 
 #[test]
 fn ping_pong_call_pong_rs() {
     world().run("scenarios/ping-pong-call-pong.scen.json");
-}
-
-#[test]
-fn ping_pong_call_pong_all_rs() {
-    world().run("scenarios/ping-pong-call-pong-all.scen.json");
-}
-
-#[test]
-fn ping_pong_call_pong_all_after_pong_rs() {
-    world().run("scenarios/ping-pong-call-pong-all-after-pong.scen.json");
 }
 
 #[test]

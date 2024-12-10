@@ -5,28 +5,8 @@ fn world() -> ScenarioWorld {
 }
 
 #[test]
-fn ping_pong_call_get_user_addresses_go() {
-    world().run("scenarios/ping-pong-call-get-user-addresses.scen.json");
-}
-
-#[test]
 fn ping_pong_call_ping_go() {
     world().run("scenarios/ping-pong-call-ping.scen.json");
-}
-
-#[test]
-fn ping_pong_call_ping_after_deadline_go() {
-    world().run("scenarios/ping-pong-call-ping-after-deadline.scen.json");
-}
-
-#[test]
-fn ping_pong_call_ping_before_activation_go() {
-    world().run("scenarios/ping-pong-call-ping-before-activation.scen.json");
-}
-
-#[test]
-fn ping_pong_call_ping_before_beginning_go() {
-    world().run("scenarios/ping-pong-call-ping-before-beginning.scen.json");
 }
 
 #[test]
@@ -40,33 +20,13 @@ fn ping_pong_call_ping_twice_go() {
 }
 
 #[test]
-fn ping_pong_call_ping_wrong_ammount_go() {
-    world().run("scenarios/ping-pong-call-ping-wrong-ammount.scen.json");
+fn ping_pong_call_ping_wrong_amount_go() {
+    world().run("scenarios/ping-pong-call-ping-wrong-amount.scen.json");
 }
 
 #[test]
 fn ping_pong_call_pong_go() {
     world().run("scenarios/ping-pong-call-pong.scen.json");
-}
-
-#[test]
-fn ping_pong_call_pong_all_go() {
-    world().run("scenarios/ping-pong-call-pong-all.scen.json");
-}
-
-#[test]
-fn ping_pong_call_pong_all_after_pong_go() {
-    world().run("scenarios/ping-pong-call-pong-all-after-pong.scen.json");
-}
-
-#[test]
-fn ping_pong_call_pong_all_interrupted_1_go() {
-    world().run("scenarios/ping-pong-call-pong-all-interrupted-1.scen.json");
-}
-
-#[test]
-fn ping_pong_call_pong_all_interrupted_2_go() {
-    world().run("scenarios/ping-pong-call-pong-all-interrupted-2.scen.json");
 }
 
 #[test]

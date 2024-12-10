@@ -1,6 +1,6 @@
 {
     "name": "ping in order to deposit funds",
-    "gasSchedule": "v3",
+    "gasSchedule": "v4",
     "steps": [
         {
             "step": "externalSteps",
@@ -17,14 +17,13 @@
             "tx": {
                 "from": "address:participant1",
                 "to": "sc:ping-pong",
-                "egldValue": "500,000,000,000",
+                "value": "500,000,000,000",
                 "function": "ping",
                 "arguments": [],
                 "gasLimit": "10,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [],
                 "status": "",
                 "gas": "*",
                 "refund": "*"
@@ -34,17 +33,17 @@
             "step": "checkState",
             "accounts": {
                 "address:my_address": {
-                    "nonce": "1",
+                    "nonce": "*",
                     "balance": "1,000,000",
                     "storage": {}
                 },
                 "address:participant1": {
-                    "nonce": "1",
+                    "nonce": "*",
                     "balance": "1,300,000,000,000",
                     "storage": {}
                 },
                 "address:participant2": {
-                    "nonce": "0",
+                    "nonce": "*",
                     "balance": "2,500,000,000,000",
                     "storage": {}
                 },
@@ -53,14 +52,11 @@
                     "balance": "500,000,000,000",
                     "storage": {
                         "str:pingAmount": "500,000,000,000",
-                        "str:activationTimestamp": "780",
-                        "str:deadline": "123,780",
-                        "str:user_address_to_id|address:participant1": "1",
-                        "str:user_id_to_address|0x0000001": "address:participant1",
-                        "str:userStatus|0x0000001": "1",
-                        "str:user_count": "1"
+                        "str:durationInSeconds": "123,000",
+                        "str:acceptedPaymentTokenId": "str:EGLD",
+                        "str:userPingTimestamp|address:participant1": "781"
                     },
-                    "code": "mxsc:../output/ping-pong.mxsc.json"
+                    "code": "file:../output/ping-pong.wasm"
                 }
             }
         }

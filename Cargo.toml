@@ -1,3 +1,5 @@
 [workspace]
-resolver = "2"
-members = ["ping-pong", "ping-pong/meta", "ping-pong/interactor"]
+members = [
+  "ping-pong",
+  "ping-pong/meta"
+]

@@ -5,10 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Upgrade:                              1
-// Endpoints:                           11
+// Endpoints:                            9
 // Async Callback (empty):               1
-// Total number of exported functions:  14
+// Total number of exported functions:  11
 
 #![no_std]
 
@@ -19,18 +18,15 @@ multiversx_sc_wasm_adapter::endpoints! {
     ping_pong
     (
         init => init
-        upgrade => upgrade
         ping => ping
         pong => pong
-        pongAll => pong_all
-        getUserAddresses => get_user_addresses
-        getContractState => get_contract_state
+        didUserPing => did_user_ping
+        getPongEnableTimestamp => get_pong_enable_timestamp
+        getTimeToPong => get_time_to_pong
+        getAcceptedPaymentToken => accepted_payment_token_id
         getPingAmount => ping_amount
-        getDeadline => deadline
-        getActivationTimestamp => activation_timestamp
-        getMaxFunds => max_funds
-        getUserStatus => user_status
-        pongAllLastUser => pong_all_last_user
+        getDurationTimestamp => duration_in_seconds
+        getUserPingTimestamp => user_ping_timestamp
     )
 }
 
