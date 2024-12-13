@@ -9,11 +9,7 @@ publish = false
 path = "src/ping_pong.rs"
 
 [dependencies.multiversx-sc]
-version = "=0.54.6"
-git = "https://github.com/multiversx/mx-sdk-rs"
-rev = "51791cb3c23f8084e97c5ef0af82a9d16ab70cb9"
+version = "0.54.6"
 
 [dev-dependencies.multiversx-sc-scenario]
-version = "=0.54.6"
-git = "https://github.com/multiversx/mx-sdk-rs"
-rev = "51791cb3c23f8084e97c5ef0af82a9d16ab70cb9"
+version = "0.54.6"
