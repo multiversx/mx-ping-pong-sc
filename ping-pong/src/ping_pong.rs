@@ -38,6 +38,15 @@ pub trait PingPong {
         self.accepted_payment_token_id().set(&token_id);
     }
 
+    #[upgrade]
+    fn upgrade(&self, ping_amount: BigUint, duration_in_seconds: u64) {
+        self.init(
+            ping_amount,
+            duration_in_seconds,
+            OptionalValue::Some(self.accepted_payment_token_id().get()),
+        )
+    }
+
     // endpoints
 
     /// User sends some tokens to be locked in the contract for a period of time.

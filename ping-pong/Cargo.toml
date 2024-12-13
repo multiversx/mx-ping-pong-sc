@@ -9,7 +9,7 @@ publish = false
 path = "src/ping_pong.rs"
 
 [dependencies.multiversx-sc]
-version = "0.52.3"
+version = "0.54.6"
 
 [dev-dependencies.multiversx-sc-scenario]
-version = "0.52.3"
+version = "0.54.6"

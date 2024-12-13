@@ -3,7 +3,10 @@ use multiversx_sc_scenario::*;
 fn world() -> ScenarioWorld {
     let mut blockchain = ScenarioWorld::new();
 
-    blockchain.register_contract("file:output/ping-pong.wasm", ping_pong::ContractBuilder);
+    blockchain.register_contract(
+        "mxsc:output/ping-pong.mxsc.json",
+        ping_pong::ContractBuilder,
+    );
     blockchain
 }
 
