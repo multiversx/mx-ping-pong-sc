@@ -5,9 +5,10 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
+// Upgrade:                              1
 // Endpoints:                            9
 // Async Callback (empty):               1
-// Total number of exported functions:  11
+// Total number of exported functions:  12
 
 #![no_std]
 
@@ -18,6 +19,7 @@ multiversx_sc_wasm_adapter::endpoints! {
     ping_pong
     (
         init => init
+        upgrade => upgrade
         ping => ping
         pong => pong
         didUserPing => did_user_ping

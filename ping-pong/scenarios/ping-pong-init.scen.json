@@ -34,7 +34,7 @@
         "txId": "deploy",
         "tx": {
           "from": "address:my_address",
-          "contractCode": "file:../output/ping-pong.wasm",
+          "contractCode": "mxsc:../output/ping-pong.mxsc.json",
           "value": "0",
           "arguments": [
               "500,000,000,000",
@@ -75,7 +75,7 @@
               "str:durationInSeconds": "123,000",
               "str:acceptedPaymentTokenId": "str:EGLD"
             },
-            "code": "file:../output/ping-pong.wasm"
+            "code": "mxsc:../output/ping-pong.mxsc.json"
           }
         }
       }
