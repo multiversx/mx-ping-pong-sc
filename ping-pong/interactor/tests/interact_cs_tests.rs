@@ -5,7 +5,7 @@ const EGLD: &str = "EGLD";
 
 #[tokio::test]
 #[cfg_attr(not(feature = "chain-simulator-tests"), ignore)]
-async fn deploy_test_ping_pong_cs() {
+async fn test_ping_pong_cs() {
     let mut interactor = PingPongInteract::new(Config::chain_simulator_config()).await;
 
     let alice = interactor.alice_wallet_address.clone();
