@@ -25,9 +25,9 @@ async fn test_ping_pong_cs() {
         )
         .await;
     interactor.ping(EGLD, None, 1, &alice, None).await;
-    assert_eq!(true, interactor.did_user_ping(alice.clone()).await);
+    assert!(interactor.did_user_ping(alice.clone()).await);
 
-    assert_eq!(false, interactor.did_user_ping(mike.clone()).await);
+    assert!(!interactor.did_user_ping(mike.clone()).await);
     interactor.ping(EGLD, None, 1, &mike, None).await;
 
     assert_eq!(Some(15), interactor.get_time_to_pong(mike.clone()).await);
