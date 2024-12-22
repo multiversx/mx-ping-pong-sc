@@ -73,7 +73,7 @@ pub struct PingArgs {
     pub token: String,
 
     #[arg(short = 'n', long = "nonce")]
-    pub nonce: Option<u64>,
+    pub nonce: u64,
 
     #[arg(short = 'a', long = "amount")]
     pub amount: u64,

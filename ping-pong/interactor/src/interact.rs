@@ -9,6 +9,7 @@ use interact_state::State;
 use multiversx_sc_snippets::imports::*;
 
 const PING_PONG_CODE: MxscPath = MxscPath::new("output/ping-pong.mxsc.json");
+pub const EGLD: &str = "EGLD";
 
 pub async fn ping_pong_cli() {
     env_logger::init();
@@ -36,7 +37,7 @@ pub async fn ping_pong_cli() {
         Some(interact_cli::InteractCliCommand::Ping(args)) => {
             interact
                 .ping(
-                    &args.token,
+                    args.token.clone(),
                     args.nonce,
                     args.amount,
                     &interact.alice_wallet_address.clone(),
@@ -113,19 +114,17 @@ impl PingPongInteract {
         duration_in_seconds: u64,
         token_id: String,
     ) {
-        let token = if token_id.to_uppercase() == "EGLD" {
-            EgldOrEsdtTokenIdentifier::egld()
-        } else {
-            EgldOrEsdtTokenIdentifier::esdt(&token_id)
-        };
-
         let new_address = self
             .interactor
             .tx()
             .from(&self.alice_wallet_address)
             .gas(30_000_000u64)
             .typed(ping_pong_proxy::PingPongProxy)
-            .init(ping_amount, duration_in_seconds, OptionalValue::Some(token))
+            .init(
+                ping_amount,
+                duration_in_seconds,
+                OptionalValue::Some(get_token_identifier(token_id)),
+            )
             .code(PING_PONG_CODE)
             .returns(ReturnsNewAddress)
             .run()
@@ -164,41 +163,28 @@ impl PingPongInteract {
 
     pub async fn ping(
         &mut self,
-        token_id: &str,
-        nonce: Option<u64>,
+        token_id: String,
+        nonce: u64,
         amount: u64,
         sender: &Bech32Address,
         message: Option<&str>,
     ) {
-        let response = if token_id.to_ascii_uppercase() == "EGLD" {
-            self.interactor
-                .tx()
-                .from(sender)
-                .to(self.state.current_ping_pong_address())
-                .gas(30_000_000u64)
-                .typed(ping_pong_proxy::PingPongProxy)
-                .ping()
-                .egld(amount)
-                .returns(ReturnsHandledOrError::new())
-                .run()
-                .await
-        } else {
-            self.interactor
-                .tx()
-                .from(sender)
-                .to(self.state.current_ping_pong_address())
-                .gas(30_000_000u64)
-                .typed(ping_pong_proxy::PingPongProxy)
-                .ping()
-                .payment((
-                    TokenIdentifier::from(&token_id.to_uppercase()),
-                    nonce.unwrap(),
-                    BigUint::from(amount),
-                ))
-                .returns(ReturnsHandledOrError::new())
-                .run()
-                .await
-        };
+        let response = self
+            .interactor
+            .tx()
+            .from(sender)
+            .to(self.state.current_ping_pong_address())
+            .gas(30_000_000u64)
+            .typed(ping_pong_proxy::PingPongProxy)
+            .ping()
+            .payment(EgldOrEsdtTokenPayment::new(
+                get_token_identifier(token_id),
+                nonce,
+                BigUint::from(amount),
+            ))
+            .returns(ReturnsHandledOrError::new())
+            .run()
+            .await;
 
         match response {
             Ok(_) => println!("Ping successfully executed"),
@@ -285,7 +271,7 @@ impl PingPongInteract {
             .await;
 
         if result_value.is_egld() {
-            return "EGLD".to_owned();
+            return EGLD.to_owned();
         }
 
         result_value.into_esdt_option().unwrap().to_string()
@@ -322,5 +308,13 @@ impl PingPongInteract {
             .returns(ReturnsResultUnmanaged)
             .run()
             .await
+    }
+}
+
+fn get_token_identifier(token_id: String) -> EgldOrEsdtTokenIdentifier<StaticApi> {
+    if token_id.to_uppercase().eq(EGLD) {
+        EgldOrEsdtTokenIdentifier::egld()
+    } else {
+        EgldOrEsdtTokenIdentifier::esdt(&token_id)
     }
 }

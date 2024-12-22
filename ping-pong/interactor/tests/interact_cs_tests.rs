@@ -1,7 +1,5 @@
 use multiversx_sc_snippets::imports::*;
-use ping_pong_interact::{Config, PingPongInteract};
-
-const EGLD: &str = "EGLD";
+use ping_pong_interact::{Config, PingPongInteract, EGLD};
 
 #[tokio::test]
 #[cfg_attr(not(feature = "chain-simulator-tests"), ignore)]
@@ -17,18 +15,22 @@ async fn test_ping_pong_cs() {
 
     interactor
         .ping(
-            EGLD,
-            None,
-            2,
+            EGLD.to_string(),
+            0,
+            2u64,
             &alice,
             Some("The payment must match the fixed ping amount"),
         )
         .await;
-    interactor.ping(EGLD, None, 1, &alice, None).await;
+    interactor
+        .ping(EGLD.to_string(), 0, 1u64, &alice, None)
+        .await;
     assert!(interactor.did_user_ping(alice.clone()).await);
 
     assert!(!interactor.did_user_ping(mike.clone()).await);
-    interactor.ping(EGLD, None, 1, &mike, None).await;
+    interactor
+        .ping(EGLD.to_string(), 0, 1u64, &mike, None)
+        .await;
 
     assert_eq!(Some(15), interactor.get_time_to_pong(mike.clone()).await);
     assert_eq!(EGLD, interactor.accepted_payment_token_id().await);
