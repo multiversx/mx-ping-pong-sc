@@ -1,6 +1,9 @@
-extern crate ping_pong_interact;
+
+use multiversx_sc_snippets::imports::*;
+use ping_pong_interact::ping_pong_cli;
 
 #[tokio::main]
-pub async fn main() {
-    ping_pong_interact::ping_pong_egld_cli().await;
-}
+async fn main() {
+    ping_pong_cli().await;
+}  
+

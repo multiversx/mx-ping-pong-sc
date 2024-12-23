@@ -10,4 +10,3 @@ path = ".."
 
 [dependencies.multiversx-sc-meta-lib]
 version = "0.54.6"
-default-features = false

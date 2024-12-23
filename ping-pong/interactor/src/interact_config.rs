@@ -11,7 +11,7 @@ pub enum ChainType {
     Simulator,
 }
 
-/// Ping Pong Interact configuration
+/// Contract Interact configuration
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub gateway_uri: String,

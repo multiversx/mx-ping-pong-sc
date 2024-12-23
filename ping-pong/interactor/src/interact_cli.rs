@@ -16,7 +16,7 @@ pub enum InteractCliCommand {
     #[command(name = "deploy", about = "Deploy contract.")]
     Deploy(DeployArgs),
     #[command(name = "upgrade", about = "Upgrade contract.")]
-    Upgrade(DeployArgs),
+    Upgrade(UpgradeArgs),
     #[command(
         name = "ping",
         about = "User sends some EGLD to be locked in the contract for a period of time."
@@ -24,33 +24,26 @@ pub enum InteractCliCommand {
     Ping(PingArgs),
     #[command(name = "pong", about = "User can take back funds from the contract.")]
     Pong,
-    #[command(name = "pong-all", about = "Send back funds to all users who pinged.")]
-    PongAll,
+    #[command(name = "did-user-ping", about = "Returns if a user ping-ed or not")]
+    DidUserPing(DidUserPingArgs),
     #[command(
-        name = "user-addresses",
-        about = "Lists the addresses of all users that have `ping`-ed in the order they have `ping`-ed."
+        name = "pong-enable",
+        about = "Returns the timestamp when pong is enabled."
     )]
-    GetUserAddresses,
-    #[command(name = "contract-state", about = "Returns the current contract state.")]
-    GetContractState,
+    GetPongEnableTimestamp(GetPongEnableTimestampArgs),
+    #[command(name = "time-to-pong", about = "Returns the time left to pong.")]
+    GetTimeToPong(GetTimeToPongArgs),
+    #[command(name = "token", about = "Returns accepted token to ping.")]
+    GetAcceptedPaymentToken,
     #[command(name = "ping-amount", about = "Returns the ping amount.")]
     GetPingAmount,
-    #[command(name = "deadline", about = "Return deadline.")]
-    GetDeadline,
+    #[command(name = "duration", about = "Returns the duration in seconds.")]
+    GetDurationTimestamp,
     #[command(
-        name = "activation-timestamp",
-        about = "Block timestamp of the block where the contract got activated. If not specified in the constructor it is the the deploy block timestamp."
+        name = "user-ping",
+        about = "Returns the timestamp at which the user pinged"
     )]
-    GetActivationTimestamp,
-    #[command(name = "max-funds", about = "Optional funding cap.")]
-    GetMaxFunds,
-    #[command(name = "user-status", about = "State of user funds.")]
-    GetUserStatus(UserStatusArgs),
-    #[command(
-        name = "pong-all-last-user",
-        about = "`pongAll` status, the last user to be processed. 0 if never called `pongAll` or `pongAll` completed."
-    )]
-    PongAllLastUser,
+    GetUserPingTimestamp(GetUserPingTimestampArgs),
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
@@ -61,21 +54,51 @@ pub struct DeployArgs {
     #[arg(short = 'd', long = "duration-in-seconds")]
     pub duration_in_seconds: u64,
 
-    #[arg(short = 'a', long = "activation-timestamp")]
-    pub opt_activation_timestamp: Option<u64>,
+    #[arg(short = 't', long = "token-id", default_value = "EGLD")]
+    pub token_id: String,
+}
 
-    #[arg(short = 'm', long = "max-funds")]
-    pub max_funds: Option<RustBigUint>,
+#[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
+pub struct UpgradeArgs {
+    #[arg(short = 'p', long = "ping-amount")]
+    pub ping_amount: RustBigUint,
+
+    #[arg(short = 'd', long = "duration-in-seconds")]
+    pub duration_in_seconds: u64,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
 pub struct PingArgs {
-    #[arg(short = 'c', long = "cost", default_value = "50000000000000000")]
-    pub cost: Option<u64>,
+    #[arg(short = 't', long = "token")]
+    pub token: String,
+
+    #[arg(short = 'n', long = "nonce")]
+    pub nonce: u64,
+
+    #[arg(short = 'a', long = "amount")]
+    pub amount: u64,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
-pub struct UserStatusArgs {
-    #[arg(short = 'i')]
-    pub id: usize,
+pub struct DidUserPingArgs {
+    #[arg(short = 'a', long = "address")]
+    pub address: String,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
+pub struct GetPongEnableTimestampArgs {
+    #[arg(short = 'a', long = "address")]
+    pub address: String,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
+pub struct GetTimeToPongArgs {
+    #[arg(short = 'a', long = "address")]
+    pub address: String,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
+pub struct GetUserPingTimestampArgs {
+    #[arg(short = 'a', long = "address")]
+    pub address: String,
 }

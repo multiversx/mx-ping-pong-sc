@@ -11,7 +11,7 @@ const STATE_FILE: &str = "state.toml";
 /// Multisig Interact state
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct State {
-    ping_pong_egld_address: Option<Bech32Address>,
+    ping_pong_address: Option<Bech32Address>,
 }
 
 impl State {
@@ -28,13 +28,13 @@ impl State {
     }
 
     /// Sets the ping pong address
-    pub fn set_ping_pong_egld_address(&mut self, address: Bech32Address) {
-        self.ping_pong_egld_address = Some(address);
+    pub fn set_ping_pong_address(&mut self, address: Bech32Address) {
+        self.ping_pong_address = Some(address);
     }
 
     /// Returns the ping pong contract
-    pub fn current_ping_pong_egld_address(&self) -> &Bech32Address {
-        self.ping_pong_egld_address
+    pub fn current_ping_pong_address(&self) -> &Bech32Address {
+        self.ping_pong_address
             .as_ref()
             .expect("no known ping pong contract, deploy first")
     }
