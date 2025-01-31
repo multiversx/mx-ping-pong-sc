@@ -17,7 +17,6 @@ jobs:
     with:
       rust-toolchain: stable
       mx-scenario-go-version: v3.0.0
-      enable-contracts-size-report: false
       enable-interactor-tests: true
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
