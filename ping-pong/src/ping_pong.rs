@@ -50,7 +50,7 @@ pub trait PingPong {
     // endpoints
 
     /// User sends some tokens to be locked in the contract for a period of time.
-    #[payable("*")]
+    #[payable]
     #[endpoint]
     fn ping(&self) {
         let (payment_token, payment_amount) = self.call_value().egld_or_single_fungible_esdt();
