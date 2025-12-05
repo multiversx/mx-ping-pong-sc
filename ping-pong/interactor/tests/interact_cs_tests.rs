@@ -6,8 +6,8 @@ use ping_pong_interact::{Config, PingPongInteract, EGLD};
 async fn test_ping_pong_cs() {
     let mut interactor = PingPongInteract::new(Config::chain_simulator_config()).await;
 
-    let alice = interactor.alice_wallet_address.clone();
-    let mike = interactor.mike_wallet_address.clone();
+    let alice = interactor.wallet_address_1.clone();
+    let mike = interactor.wallet_address_2.clone();
     let amount = RustBigUint::from(1u32);
     let time = 15u64;
 

@@ -19,14 +19,14 @@ pub trait PingPong {
     fn init(
         &self,
         ping_amount: BigUint,
-        duration_in_seconds: u64,
+        duration_in_seconds: DurationSeconds,
         opt_token_id: OptionalValue<EgldOrEsdtTokenIdentifier>,
     ) {
         require!(ping_amount > 0, "Ping amount cannot be set to zero");
         self.ping_amount().set(&ping_amount);
 
         require!(
-            duration_in_seconds > 0,
+            duration_in_seconds > DurationSeconds::zero(),
             "Duration in seconds cannot be set to zero"
         );
         self.duration_in_seconds().set(duration_in_seconds);
@@ -39,7 +39,7 @@ pub trait PingPong {
     }
 
     #[upgrade]
-    fn upgrade(&self, ping_amount: BigUint, duration_in_seconds: u64) {
+    fn upgrade(&self, ping_amount: BigUint, duration_in_seconds: DurationSeconds) {
         self.init(
             ping_amount,
             duration_in_seconds,
@@ -66,7 +66,7 @@ pub trait PingPong {
         let caller = self.blockchain().get_caller();
         require!(!self.did_user_ping(&caller), "Already pinged");
 
-        let current_block_timestamp = self.blockchain().get_block_timestamp();
+        let current_block_timestamp = self.blockchain().get_block_timestamp_seconds();
         self.user_ping_timestamp(&caller)
             .set(current_block_timestamp);
     }
@@ -79,7 +79,7 @@ pub trait PingPong {
         require!(self.did_user_ping(&caller), "Must ping first");
 
         let pong_enable_timestamp = self.get_pong_enable_timestamp(&caller);
-        let current_timestamp = self.blockchain().get_block_timestamp();
+        let current_timestamp = self.blockchain().get_block_timestamp_seconds();
         require!(
             current_timestamp >= pong_enable_timestamp,
             "Cannot pong before deadline"
@@ -102,9 +102,9 @@ pub trait PingPong {
     }
 
     #[view(getPongEnableTimestamp)]
-    fn get_pong_enable_timestamp(&self, address: &ManagedAddress) -> u64 {
+    fn get_pong_enable_timestamp(&self, address: &ManagedAddress) -> TimestampSeconds {
         if !self.did_user_ping(address) {
-            return 0;
+            return TimestampSeconds::zero();
         }
 
         let user_ping_timestamp = self.user_ping_timestamp(address).get();
@@ -114,16 +114,16 @@ pub trait PingPong {
     }
 
     #[view(getTimeToPong)]
-    fn get_time_to_pong(&self, address: &ManagedAddress) -> OptionalValue<u64> {
+    fn get_time_to_pong(&self, address: &ManagedAddress) -> OptionalValue<DurationSeconds> {
         if !self.did_user_ping(address) {
             return OptionalValue::None;
         }
 
         let pong_enable_timestamp = self.get_pong_enable_timestamp(address);
-        let current_timestamp = self.blockchain().get_block_timestamp();
+        let current_timestamp = self.blockchain().get_block_timestamp_seconds();
 
         if current_timestamp >= pong_enable_timestamp {
-            OptionalValue::Some(0)
+            OptionalValue::Some(DurationSeconds::zero())
         } else {
             let time_left = pong_enable_timestamp - current_timestamp;
             OptionalValue::Some(time_left)
@@ -142,11 +142,11 @@ pub trait PingPong {
 
     #[view(getDurationTimestamp)]
     #[storage_mapper("durationInSeconds")]
-    fn duration_in_seconds(&self) -> SingleValueMapper<u64>;
+    fn duration_in_seconds(&self) -> SingleValueMapper<DurationSeconds>;
 
     #[view(getUserPingTimestamp)]
     #[storage_mapper("userPingTimestamp")]
-    fn user_ping_timestamp(&self, address: &ManagedAddress) -> SingleValueMapper<u64>;
+    fn user_ping_timestamp(&self, address: &ManagedAddress) -> SingleValueMapper<TimestampSeconds>;
 
     // events
 

@@ -49,7 +49,7 @@ where
     /// `token_id` - Optional. The Token Identifier of the token that is going to be used. Default is "EGLD". 
     pub fn init<
         Arg0: ProxyArg<BigUint<Env::Api>>,
-        Arg1: ProxyArg<u64>,
+        Arg1: ProxyArg<DurationSeconds>,
         Arg2: ProxyArg<OptionalValue<EgldOrEsdtTokenIdentifier<Env::Api>>>,
     >(
         self,
@@ -78,7 +78,7 @@ where
 {
     pub fn upgrade<
         Arg0: ProxyArg<BigUint<Env::Api>>,
-        Arg1: ProxyArg<u64>,
+        Arg1: ProxyArg<DurationSeconds>,
     >(
         self,
         ping_amount: Arg0,
@@ -140,7 +140,7 @@ where
     >(
         self,
         address: Arg0,
-    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, u64> {
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, TimestampSeconds> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getPongEnableTimestamp")
@@ -153,7 +153,7 @@ where
     >(
         self,
         address: Arg0,
-    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, OptionalValue<u64>> {
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, OptionalValue<DurationSeconds>> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getTimeToPong")
@@ -181,7 +181,7 @@ where
 
     pub fn duration_in_seconds(
         self,
-    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, u64> {
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, DurationSeconds> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getDurationTimestamp")
@@ -193,7 +193,7 @@ where
     >(
         self,
         address: Arg0,
-    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, u64> {
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, TimestampSeconds> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getUserPingTimestamp")
