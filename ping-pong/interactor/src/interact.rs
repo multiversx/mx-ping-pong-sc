@@ -21,17 +21,19 @@ pub async fn ping_pong_cli() {
 
     match &cli.command {
         Some(interact_cli::InteractCliCommand::Deploy(args)) => {
+            let duration_in_seconds = DurationSeconds::new(args.duration_in_seconds);
             interact
                 .deploy(
                     args.ping_amount.clone(),
-                    args.duration_in_seconds,
+                    duration_in_seconds,
                     args.token_id.clone(),
                 )
                 .await;
         }
         Some(interact_cli::InteractCliCommand::Upgrade(args)) => {
+            let duration_in_seconds = DurationSeconds::new(args.duration_in_seconds);``
             interact
-                .upgrade(args.ping_amount.clone(), args.duration_in_seconds)
+                .upgrade(args.ping_amount.clone(), duration_in_seconds)
                 .await;
         }
         Some(interact_cli::InteractCliCommand::Ping(args)) => {
@@ -40,14 +42,14 @@ pub async fn ping_pong_cli() {
                     args.token.clone(),
                     args.nonce,
                     args.amount,
-                    &interact.alice_wallet_address.clone(),
+                    &interact.wallet_address_1.clone(),
                     None,
                 )
                 .await;
         }
         Some(interact_cli::InteractCliCommand::Pong) => {
             interact
-                .pong(&interact.alice_wallet_address.clone(), None)
+                .pong(&interact.wallet_address_1.clone(), None)
                 .await;
         }
         Some(interact_cli::InteractCliCommand::DidUserPing(args)) => {
@@ -81,8 +83,8 @@ pub async fn ping_pong_cli() {
 
 pub struct PingPongInteract {
     pub interactor: Interactor,
-    pub alice_wallet_address: Bech32Address,
-    pub mike_wallet_address: Bech32Address,
+    pub wallet_address_1: Bech32Address,
+    pub wallet_address_2: Bech32Address,
     pub state: State,
 }
 
@@ -93,8 +95,8 @@ impl PingPongInteract {
             .use_chain_simulator(config.use_chain_simulator());
 
         interactor.set_current_dir_from_workspace("ping-pong");
-        let alice_wallet_address = interactor.register_wallet(test_wallets::alice()).await;
-        let mike_wallet_address = interactor.register_wallet(test_wallets::mike()).await;
+        let wallet_address_1 = interactor.register_wallet(test_wallets::alice()).await;
+        let wallet_address_2 = interactor.register_wallet(test_wallets::mike()).await;
 
         // Useful in the chain simulator setting
         // generate blocks until ESDTSystemSCAddress is enabled
@@ -102,8 +104,8 @@ impl PingPongInteract {
 
         PingPongInteract {
             interactor,
-            alice_wallet_address: alice_wallet_address.into(),
-            mike_wallet_address: mike_wallet_address.into(),
+            wallet_address_1: wallet_address_1.into(),
+            wallet_address_2: wallet_address_2.into(),
             state: State::load_state(),
         }
     }
@@ -111,13 +113,13 @@ impl PingPongInteract {
     pub async fn deploy(
         &mut self,
         ping_amount: RustBigUint,
-        duration_in_seconds: u64,
+        duration_in_seconds: DurationSeconds,
         token_id: String,
     ) {
         let new_address = self
             .interactor
             .tx()
-            .from(&self.alice_wallet_address)
+            .from(&self.wallet_address_1)
             .gas(30_000_000u64)
             .typed(ping_pong_proxy::PingPongProxy)
             .init(
@@ -126,39 +128,30 @@ impl PingPongInteract {
                 OptionalValue::Some(get_token_identifier(token_id)),
             )
             .code(PING_PONG_CODE)
-            .returns(ReturnsNewAddress)
+            .returns(ReturnsNewBech32Address)
             .run()
             .await;
-        let new_address_bech32 = bech32::encode(&new_address);
-        self.state
-            .set_ping_pong_address(Bech32Address::from_bech32_string(
-                new_address_bech32.clone(),
-            ));
 
-        println!("new address: {new_address_bech32}");
+        println!("new address: {new_address}");
+        self.state.set_ping_pong_address(new_address);
     }
 
-    pub async fn upgrade(&mut self, ping_amount: RustBigUint, duration_in_seconds: u64) {
+    pub async fn upgrade(&mut self, ping_amount: u128, duration_in_seconds: DurationSeconds) {
         let upgrade_address = self
             .interactor
             .tx()
-            .from(&self.alice_wallet_address)
+            .from(&self.wallet_address_1)
             .to(self.state.current_ping_pong_address())
             .gas(30_000_000u64)
             .typed(ping_pong_proxy::PingPongProxy)
             .upgrade(ping_amount, duration_in_seconds)
             .code(PING_PONG_CODE)
-            .returns(ReturnsNewAddress)
+            .returns(ReturnsNewBech32Address)
             .run()
             .await;
 
-        let upgrade_address_bech32 = bech32::encode(&upgrade_address);
-        self.state
-            .set_ping_pong_address(Bech32Address::from_bech32_string(
-                upgrade_address_bech32.clone(),
-            ));
-
-        println!("new upgrade address: {upgrade_address_bech32}");
+        println!("new upgrade address: {upgrade_address}");
+        self.state.set_ping_pong_address(upgrade_address);
     }
 
     pub async fn ping(

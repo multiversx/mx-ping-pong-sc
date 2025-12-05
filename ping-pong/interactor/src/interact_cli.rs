@@ -61,7 +61,7 @@ pub struct DeployArgs {
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
 pub struct UpgradeArgs {
     #[arg(short = 'p', long = "ping-amount")]
-    pub ping_amount: RustBigUint,
+    pub ping_amount: u128,
 
     #[arg(short = 'd', long = "duration-in-seconds")]
     pub duration_in_seconds: u64,
