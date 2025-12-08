@@ -27,7 +27,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getTimeToPong => get_time_to_pong
         getAcceptedPaymentToken => accepted_payment_token_id
         getPingAmount => ping_amount
-        getDurationTimestamp => duration_in_seconds
+        getDurationTimestamp => duration_in_milliseconds
         getUserPingTimestamp => user_ping_timestamp
     )
 }
