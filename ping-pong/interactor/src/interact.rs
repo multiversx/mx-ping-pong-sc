@@ -21,48 +21,34 @@ pub async fn ping_pong_cli() {
 
     match &cli.command {
         Some(interact_cli::InteractCliCommand::Deploy(args)) => {
-            let duration_in_seconds = DurationSeconds::new(args.duration_in_seconds);
-            interact
-                .deploy(
-                    args.ping_amount.clone(),
-                    duration_in_seconds,
-                    args.token_id.clone(),
-                )
-                .await;
+            let duration = DurationMillis::new(args.duration);
+            interact.deploy(args.amount, duration, &args.token_id).await;
         }
         Some(interact_cli::InteractCliCommand::Upgrade(args)) => {
-            let duration_in_seconds = DurationSeconds::new(args.duration_in_seconds);``
-            interact
-                .upgrade(args.ping_amount.clone(), duration_in_seconds)
-                .await;
+            let duration = DurationMillis::new(args.duration);
+            interact.upgrade(args.amount, duration).await;
         }
         Some(interact_cli::InteractCliCommand::Ping(args)) => {
+            let sender = interact.wallet_address_1.clone();
             interact
-                .ping(
-                    args.token.clone(),
-                    args.nonce,
-                    args.amount,
-                    &interact.wallet_address_1.clone(),
-                    None,
-                )
+                .ping(&args.token, args.nonce, args.amount, &sender, None)
                 .await;
         }
         Some(interact_cli::InteractCliCommand::Pong) => {
-            interact
-                .pong(&interact.wallet_address_1.clone(), None)
-                .await;
+            let sender = interact.wallet_address_1.clone();
+            interact.pong(&sender, None).await;
         }
         Some(interact_cli::InteractCliCommand::DidUserPing(args)) => {
             let address = Bech32Address::from_bech32_string(args.address.clone());
-            interact.did_user_ping(address).await;
+            interact.did_user_ping(&address).await;
         }
         Some(interact_cli::InteractCliCommand::GetPongEnableTimestamp(args)) => {
             let address = Bech32Address::from_bech32_string(args.address.clone());
-            interact.get_pong_enable_timestamp(address).await;
+            interact.get_pong_enable_timestamp(&address).await;
         }
         Some(interact_cli::InteractCliCommand::GetTimeToPong(args)) => {
             let address = Bech32Address::from_bech32_string(args.address.clone());
-            interact.get_time_to_pong(address).await;
+            interact.get_time_to_pong(&address).await;
         }
         Some(interact_cli::InteractCliCommand::GetAcceptedPaymentToken) => {
             interact.accepted_payment_token_id().await;
@@ -71,11 +57,11 @@ pub async fn ping_pong_cli() {
             interact.ping_amount().await;
         }
         Some(interact_cli::InteractCliCommand::GetDurationTimestamp) => {
-            interact.duration_in_seconds().await;
+            interact.duration_in_millis().await;
         }
         Some(interact_cli::InteractCliCommand::GetUserPingTimestamp(args)) => {
             let address = Bech32Address::from_bech32_string(args.address.clone());
-            interact.user_ping_timestamp(address).await;
+            interact.user_ping_timestamp(&address).await;
         }
         None => {}
     }
@@ -110,12 +96,8 @@ impl PingPongInteract {
         }
     }
 
-    pub async fn deploy(
-        &mut self,
-        ping_amount: RustBigUint,
-        duration_in_seconds: DurationSeconds,
-        token_id: String,
-    ) {
+    pub async fn deploy(&mut self, amount: u128, duration: DurationMillis, token_id: &str) {
+        let managed_token_id = ManagedBuffer::from(token_id);
         let new_address = self
             .interactor
             .tx()
@@ -123,9 +105,9 @@ impl PingPongInteract {
             .gas(30_000_000u64)
             .typed(ping_pong_proxy::PingPongProxy)
             .init(
-                ping_amount,
-                duration_in_seconds,
-                OptionalValue::Some(get_token_identifier(token_id)),
+                amount,
+                duration,
+                OptionalValue::Some(EgldOrEsdtTokenIdentifier::parse(managed_token_id)),
             )
             .code(PING_PONG_CODE)
             .returns(ReturnsNewBech32Address)
@@ -136,7 +118,7 @@ impl PingPongInteract {
         self.state.set_ping_pong_address(new_address);
     }
 
-    pub async fn upgrade(&mut self, ping_amount: u128, duration_in_seconds: DurationSeconds) {
+    pub async fn upgrade(&mut self, amount: u128, duration: DurationMillis) {
         let upgrade_address = self
             .interactor
             .tx()
@@ -144,7 +126,7 @@ impl PingPongInteract {
             .to(self.state.current_ping_pong_address())
             .gas(30_000_000u64)
             .typed(ping_pong_proxy::PingPongProxy)
-            .upgrade(ping_amount, duration_in_seconds)
+            .upgrade(amount, duration)
             .code(PING_PONG_CODE)
             .returns(ReturnsNewBech32Address)
             .run()
@@ -156,12 +138,19 @@ impl PingPongInteract {
 
     pub async fn ping(
         &mut self,
-        token_id: String,
+        token_id: &str,
         nonce: u64,
-        amount: u64,
+        amount: u128,
         sender: &Bech32Address,
         message: Option<&str>,
     ) {
+        let managed_token_id = ManagedBuffer::from(token_id);
+        let payment = EgldOrEsdtTokenPayment::new(
+            EgldOrEsdtTokenIdentifier::parse(managed_token_id),
+            nonce,
+            BigUint::from(amount),
+        );
+
         let response = self
             .interactor
             .tx()
@@ -170,11 +159,7 @@ impl PingPongInteract {
             .gas(30_000_000u64)
             .typed(ping_pong_proxy::PingPongProxy)
             .ping()
-            .payment(EgldOrEsdtTokenPayment::new(
-                get_token_identifier(token_id),
-                nonce,
-                BigUint::from(amount),
-            ))
+            .payment(payment)
             .returns(ReturnsHandledOrError::new())
             .run()
             .await;
@@ -210,7 +195,7 @@ impl PingPongInteract {
         }
     }
 
-    pub async fn did_user_ping(&mut self, address: Bech32Address) -> bool {
+    pub async fn did_user_ping(&mut self, address: &Bech32Address) -> bool {
         self.interactor
             .query()
             .to(self.state.current_ping_pong_address())
@@ -221,7 +206,7 @@ impl PingPongInteract {
             .await
     }
 
-    pub async fn get_pong_enable_timestamp(&mut self, address: Bech32Address) -> u64 {
+    pub async fn get_pong_enable_timestamp(&mut self, address: &Bech32Address) -> TimestampMillis {
         self.interactor
             .query()
             .to(self.state.current_ping_pong_address())
@@ -232,7 +217,7 @@ impl PingPongInteract {
             .await
     }
 
-    pub async fn get_time_to_pong(&mut self, address: Bech32Address) -> Option<u64> {
+    pub async fn get_time_to_pong(&mut self, address: &Bech32Address) -> Option<DurationMillis> {
         let result_value = self
             .interactor
             .query()
@@ -281,18 +266,18 @@ impl PingPongInteract {
             .await
     }
 
-    pub async fn duration_in_seconds(&mut self) -> u64 {
+    pub async fn duration_in_millis(&mut self) -> DurationMillis {
         self.interactor
             .query()
             .to(self.state.current_ping_pong_address())
             .typed(ping_pong_proxy::PingPongProxy)
-            .duration_in_seconds()
+            .duration_in_milliseconds()
             .returns(ReturnsResultUnmanaged)
             .run()
             .await
     }
 
-    pub async fn user_ping_timestamp(&mut self, address: Bech32Address) -> u64 {
+    pub async fn user_ping_timestamp(&mut self, address: &Bech32Address) -> TimestampMillis {
         self.interactor
             .query()
             .to(self.state.current_ping_pong_address())
@@ -301,13 +286,5 @@ impl PingPongInteract {
             .returns(ReturnsResultUnmanaged)
             .run()
             .await
-    }
-}
-
-fn get_token_identifier(token_id: String) -> EgldOrEsdtTokenIdentifier<StaticApi> {
-    if token_id.to_uppercase().eq(EGLD) {
-        EgldOrEsdtTokenIdentifier::egld()
-    } else {
-        EgldOrEsdtTokenIdentifier::esdt(&token_id)
     }
 }

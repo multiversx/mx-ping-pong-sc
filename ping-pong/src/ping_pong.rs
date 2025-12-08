@@ -13,23 +13,23 @@ use multiversx_sc::imports::*;
 pub trait PingPong {
     /// Necessary configuration when deploying:
     /// `ping_amount` - the exact amount that needs to be sent when `ping`-ing.  
-    /// `duration_in_seconds` - how much time (in seconds) until `pong` can be called after the initial `ping` call  
+    /// `duration_in_millis` - how much time (in milliseconds) until `pong` can be called after the initial `ping` call  
     /// `token_id` - Optional. The Token Identifier of the token that is going to be used. Default is "EGLD".
     #[init]
     fn init(
         &self,
         ping_amount: BigUint,
-        duration_in_seconds: DurationSeconds,
+        duration_in_millis: DurationMillis,
         opt_token_id: OptionalValue<EgldOrEsdtTokenIdentifier>,
     ) {
         require!(ping_amount > 0, "Ping amount cannot be set to zero");
         self.ping_amount().set(&ping_amount);
 
         require!(
-            duration_in_seconds > DurationSeconds::zero(),
-            "Duration in seconds cannot be set to zero"
+            duration_in_millis > DurationMillis::zero(),
+            "Duration in milliseconds cannot be set to zero"
         );
-        self.duration_in_seconds().set(duration_in_seconds);
+        self.duration_in_milliseconds().set(duration_in_millis);
 
         let token_id = match opt_token_id {
             OptionalValue::Some(t) => t,
@@ -39,10 +39,10 @@ pub trait PingPong {
     }
 
     #[upgrade]
-    fn upgrade(&self, ping_amount: BigUint, duration_in_seconds: DurationSeconds) {
+    fn upgrade(&self, ping_amount: BigUint, duration_in_millis: DurationMillis) {
         self.init(
             ping_amount,
-            duration_in_seconds,
+            duration_in_millis,
             OptionalValue::Some(self.accepted_payment_token_id().get()),
         )
     }
@@ -66,7 +66,7 @@ pub trait PingPong {
         let caller = self.blockchain().get_caller();
         require!(!self.did_user_ping(&caller), "Already pinged");
 
-        let current_block_timestamp = self.blockchain().get_block_timestamp_seconds();
+        let current_block_timestamp = self.blockchain().get_block_timestamp_millis();
         self.user_ping_timestamp(&caller)
             .set(current_block_timestamp);
     }
@@ -79,7 +79,7 @@ pub trait PingPong {
         require!(self.did_user_ping(&caller), "Must ping first");
 
         let pong_enable_timestamp = self.get_pong_enable_timestamp(&caller);
-        let current_timestamp = self.blockchain().get_block_timestamp_seconds();
+        let current_timestamp = self.blockchain().get_block_timestamp_millis();
         require!(
             current_timestamp >= pong_enable_timestamp,
             "Cannot pong before deadline"
@@ -102,28 +102,27 @@ pub trait PingPong {
     }
 
     #[view(getPongEnableTimestamp)]
-    fn get_pong_enable_timestamp(&self, address: &ManagedAddress) -> TimestampSeconds {
+    fn get_pong_enable_timestamp(&self, address: &ManagedAddress) -> TimestampMillis {
         if !self.did_user_ping(address) {
-            return TimestampSeconds::zero();
+            return TimestampMillis::zero();
         }
 
         let user_ping_timestamp = self.user_ping_timestamp(address).get();
-        let duration_in_seconds = self.duration_in_seconds().get();
-
-        user_ping_timestamp + duration_in_seconds
+        let duration_in_millis = self.duration_in_milliseconds().get();
+        user_ping_timestamp + duration_in_millis
     }
 
     #[view(getTimeToPong)]
-    fn get_time_to_pong(&self, address: &ManagedAddress) -> OptionalValue<DurationSeconds> {
+    fn get_time_to_pong(&self, address: &ManagedAddress) -> OptionalValue<DurationMillis> {
         if !self.did_user_ping(address) {
             return OptionalValue::None;
         }
 
         let pong_enable_timestamp = self.get_pong_enable_timestamp(address);
-        let current_timestamp = self.blockchain().get_block_timestamp_seconds();
+        let current_timestamp = self.blockchain().get_block_timestamp_millis();
 
         if current_timestamp >= pong_enable_timestamp {
-            OptionalValue::Some(DurationSeconds::zero())
+            OptionalValue::Some(DurationMillis::zero())
         } else {
             let time_left = pong_enable_timestamp - current_timestamp;
             OptionalValue::Some(time_left)
@@ -141,12 +140,12 @@ pub trait PingPong {
     fn ping_amount(&self) -> SingleValueMapper<BigUint>;
 
     #[view(getDurationTimestamp)]
-    #[storage_mapper("durationInSeconds")]
-    fn duration_in_seconds(&self) -> SingleValueMapper<DurationSeconds>;
+    #[storage_mapper("durationInMilliseconds")]
+    fn duration_in_milliseconds(&self) -> SingleValueMapper<DurationMillis>;
 
     #[view(getUserPingTimestamp)]
     #[storage_mapper("userPingTimestamp")]
-    fn user_ping_timestamp(&self, address: &ManagedAddress) -> SingleValueMapper<TimestampSeconds>;
+    fn user_ping_timestamp(&self, address: &ManagedAddress) -> SingleValueMapper<TimestampMillis>;
 
     // events
 

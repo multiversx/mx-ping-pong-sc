@@ -9,7 +9,7 @@
         {
             "step": "setState",
             "currentBlockInfo": {
-                "blockTimestamp": "781"
+                "blockTimestampMs": "781"
             }
         },
         {
@@ -52,7 +52,7 @@
                     "balance": "1,000,000,000,000",
                     "storage": {
                         "str:pingAmount": "500,000,000,000",
-                        "str:durationInSeconds": "123,000",
+                        "str:durationInMilliseconds": "123,000",
                         "str:acceptedPaymentTokenId": "str:EGLD",
                         "str:userPingTimestamp|address:participant1": "781",
                         "str:userPingTimestamp|address:participant2": "781"

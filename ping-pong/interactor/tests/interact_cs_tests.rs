@@ -8,34 +8,30 @@ async fn test_ping_pong_cs() {
 
     let alice = interactor.wallet_address_1.clone();
     let mike = interactor.wallet_address_2.clone();
-    let amount = RustBigUint::from(1u32);
-    let time = 15u64;
+    let amount = 1u128;
+    let duration = DurationMillis::new(15000u64);
 
-    interactor.deploy(amount, time, EGLD.to_string()).await;
+    interactor.deploy(amount, duration, EGLD).await;
 
     interactor
         .ping(
-            EGLD.to_string(),
+            EGLD,
             0,
-            2u64,
+            2,
             &alice,
             Some("The payment must match the fixed ping amount"),
         )
         .await;
-    interactor
-        .ping(EGLD.to_string(), 0, 1u64, &alice, None)
-        .await;
-    assert!(interactor.did_user_ping(alice.clone()).await);
+    interactor.ping(EGLD, 0, 1, &alice, None).await;
+    assert!(interactor.did_user_ping(&alice).await);
 
-    assert!(!interactor.did_user_ping(mike.clone()).await);
-    interactor
-        .ping(EGLD.to_string(), 0, 1u64, &mike, None)
-        .await;
+    assert!(!interactor.did_user_ping(&mike).await);
+    interactor.ping(EGLD, 0, 1, &mike, None).await;
 
-    assert_eq!(Some(15), interactor.get_time_to_pong(mike.clone()).await);
+    assert_eq!(Some(duration), interactor.get_time_to_pong(&mike).await);
     assert_eq!(EGLD, interactor.accepted_payment_token_id().await);
-    assert_eq!(RustBigUint::from(1u64), interactor.ping_amount().await);
-    assert_eq!(time, interactor.duration_in_seconds().await);
+    assert_eq!(RustBigUint::from(amount), interactor.ping_amount().await);
+    assert_eq!(duration, interactor.duration_in_millis().await);
 
     interactor.pong(&alice, None).await;
     interactor.pong(&alice, Some("Must ping first")).await;

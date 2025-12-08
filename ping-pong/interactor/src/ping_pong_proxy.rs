@@ -45,23 +45,23 @@ where
 {
     /// Necessary configuration when deploying: 
     /// `ping_amount` - the exact amount that needs to be sent when `ping`-ing.   
-    /// `duration_in_seconds` - how much time (in seconds) until `pong` can be called after the initial `ping` call   
+    /// `duration_in_millis` - how much time (in milliseconds) until `pong` can be called after the initial `ping` call   
     /// `token_id` - Optional. The Token Identifier of the token that is going to be used. Default is "EGLD". 
     pub fn init<
         Arg0: ProxyArg<BigUint<Env::Api>>,
-        Arg1: ProxyArg<DurationSeconds>,
+        Arg1: ProxyArg<DurationMillis>,
         Arg2: ProxyArg<OptionalValue<EgldOrEsdtTokenIdentifier<Env::Api>>>,
     >(
         self,
         ping_amount: Arg0,
-        duration_in_seconds: Arg1,
+        duration_in_millis: Arg1,
         opt_token_id: Arg2,
     ) -> TxTypedDeploy<Env, From, NotPayable, Gas, ()> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_deploy()
             .argument(&ping_amount)
-            .argument(&duration_in_seconds)
+            .argument(&duration_in_millis)
             .argument(&opt_token_id)
             .original_result()
     }
@@ -78,17 +78,17 @@ where
 {
     pub fn upgrade<
         Arg0: ProxyArg<BigUint<Env::Api>>,
-        Arg1: ProxyArg<DurationSeconds>,
+        Arg1: ProxyArg<DurationMillis>,
     >(
         self,
         ping_amount: Arg0,
-        duration_in_seconds: Arg1,
+        duration_in_millis: Arg1,
     ) -> TxTypedUpgrade<Env, From, To, NotPayable, Gas, ()> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_upgrade()
             .argument(&ping_amount)
-            .argument(&duration_in_seconds)
+            .argument(&duration_in_millis)
             .original_result()
     }
 }
@@ -140,7 +140,7 @@ where
     >(
         self,
         address: Arg0,
-    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, TimestampSeconds> {
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, TimestampMillis> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getPongEnableTimestamp")
@@ -153,7 +153,7 @@ where
     >(
         self,
         address: Arg0,
-    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, OptionalValue<DurationSeconds>> {
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, OptionalValue<DurationMillis>> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getTimeToPong")
@@ -179,9 +179,9 @@ where
             .original_result()
     }
 
-    pub fn duration_in_seconds(
+    pub fn duration_in_milliseconds(
         self,
-    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, DurationSeconds> {
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, DurationMillis> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getDurationTimestamp")
@@ -193,7 +193,7 @@ where
     >(
         self,
         address: Arg0,
-    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, TimestampSeconds> {
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, TimestampMillis> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getUserPingTimestamp")

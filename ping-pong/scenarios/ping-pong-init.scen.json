@@ -72,7 +72,7 @@
             "balance": "0",
             "storage": {
               "str:pingAmount": "500,000,000,000",
-              "str:durationInSeconds": "123,000",
+              "str:durationInMilliseconds": "123,000",
               "str:acceptedPaymentTokenId": "str:EGLD"
             },
             "code": "mxsc:../output/ping-pong.mxsc.json"

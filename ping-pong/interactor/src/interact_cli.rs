@@ -1,5 +1,4 @@
 use clap::{Args, Parser, Subcommand};
-use multiversx_sc_snippets::imports::RustBigUint;
 
 /// Ping Pong Interact CLI
 #[derive(Default, PartialEq, Eq, Debug, Parser)]
@@ -19,7 +18,7 @@ pub enum InteractCliCommand {
     Upgrade(UpgradeArgs),
     #[command(
         name = "ping",
-        about = "User sends some EGLD to be locked in the contract for a period of time."
+        about = "User sends some tokens to be locked in the contract for a period of time."
     )]
     Ping(PingArgs),
     #[command(name = "pong", about = "User can take back funds from the contract.")]
@@ -48,11 +47,11 @@ pub enum InteractCliCommand {
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
 pub struct DeployArgs {
-    #[arg(short = 'p', long = "ping-amount")]
-    pub ping_amount: RustBigUint,
+    #[arg(short = 'p')]
+    pub amount: u128,
 
-    #[arg(short = 'd', long = "duration-in-seconds")]
-    pub duration_in_seconds: u64,
+    #[arg(short = 'd')]
+    pub duration: u64,
 
     #[arg(short = 't', long = "token-id", default_value = "EGLD")]
     pub token_id: String,
@@ -60,11 +59,11 @@ pub struct DeployArgs {
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
 pub struct UpgradeArgs {
-    #[arg(short = 'p', long = "ping-amount")]
-    pub ping_amount: u128,
+    #[arg(short = 'p')]
+    pub amount: u128,
 
-    #[arg(short = 'd', long = "duration-in-seconds")]
-    pub duration_in_seconds: u64,
+    #[arg(short = 'd', long = "duration")]
+    pub duration: u64,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
@@ -76,7 +75,7 @@ pub struct PingArgs {
     pub nonce: u64,
 
     #[arg(short = 'a', long = "amount")]
-    pub amount: u64,
+    pub amount: u128,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
