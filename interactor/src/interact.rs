@@ -8,7 +8,7 @@ pub use interact_config::Config;
 use interact_state::State;
 use multiversx_sc_snippets::imports::*;
 
-const PING_PONG_CODE: MxscPath = MxscPath::new("output/ping-pong.mxsc.json");
+const PING_PONG_CODE: MxscPath = MxscPath::new("../output/ping-pong.mxsc.json");
 pub const EGLD: &str = "EGLD";
 
 pub async fn ping_pong_cli() {
@@ -80,7 +80,7 @@ impl PingPongInteract {
             .await
             .use_chain_simulator(config.use_chain_simulator());
 
-        interactor.set_current_dir_from_workspace("ping-pong");
+        interactor.set_current_dir_from_workspace("interactor");
         let wallet_address_1 = interactor.register_wallet(test_wallets::alice()).await;
         let wallet_address_2 = interactor.register_wallet(test_wallets::mike()).await;
 

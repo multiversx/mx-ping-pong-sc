@@ -16,7 +16,4 @@ version = "0.63.3"
 
 [workspace]
 resolver = "2"
-members = [
-    ".",
-    "meta",
-]
+members = [".", "meta", "interactor"]
