@@ -36,7 +36,7 @@ pub enum InteractCliCommand {
     GetAcceptedPaymentToken,
     #[command(name = "ping-amount", about = "Returns the ping amount.")]
     GetPingAmount,
-    #[command(name = "duration", about = "Returns the duration in seconds.")]
+    #[command(name = "duration", about = "Returns the duration in milliseconds.")]
     GetDurationTimestamp,
     #[command(
         name = "user-ping",
@@ -47,10 +47,10 @@ pub enum InteractCliCommand {
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
 pub struct DeployArgs {
-    #[arg(short = 'p')]
+    #[arg(short = 'a', long = "amount")]
     pub amount: u128,
 
-    #[arg(short = 'd')]
+    #[arg(short = 'd', long = "duration")]
     pub duration: u64,
 
     #[arg(short = 't', long = "token-id", default_value = "EGLD")]
@@ -59,7 +59,7 @@ pub struct DeployArgs {
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Args)]
 pub struct UpgradeArgs {
-    #[arg(short = 'p')]
+    #[arg(short = 'a', long = "amount")]
     pub amount: u128,
 
     #[arg(short = 'd', long = "duration")]
